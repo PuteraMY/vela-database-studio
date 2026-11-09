@@ -16,7 +16,7 @@ export function binary(op:string,a:Value,b:Value):Value {
     case '+':return num(a)+num(b);case '-':return num(a)-num(b);case '*':return num(a)*num(b);
     case '/':return num(b)===0?null:Number.isInteger(num(a))&&Number.isInteger(num(b))?Math.trunc(num(a)/num(b)):num(a)/num(b);
     case '%':return Math.trunc(num(b))===0?null:Math.trunc(num(a))%Math.trunc(num(b));case '||':return String(normalize(a))+String(normalize(b));
-    case 'LIKE':{const pattern=String(b).replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/%/g,'[\\s\\S]*').replace(/_/g,'[\\s\\S]');return new RegExp(`^${pattern}$`,'i').test(String(a));}
+    case 'LIKE':{const pattern=String(b).replace(/[A-Z]/g,c=>c.toLowerCase()).replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/%/g,'[\\s\\S]*').replace(/_/g,'[\\s\\S]');return new RegExp(`^${pattern}$`,'u').test(String(a).replace(/[A-Z]/g,c=>c.toLowerCase()));}
     default:throw new SqlError(`Operator “${op}” tidak disokong.`);
   }
 }
@@ -42,7 +42,7 @@ export function validateFunction(e:Extract<Expr,{kind:'call'}>){
   const arity=aggregates.has(e.name)?[1,1]:functionArity[e.name];
   if(!arity)throw new SqlError(`Fungsi “${e.name.toUpperCase()}” tidak disokong.`);
   if(e.args.length<arity[0]||e.args.length>arity[1])throw new SqlError(`Bilangan argumen untuk ${e.name.toUpperCase()} tidak sah.`);
-  if(e.args.some(x=>x.kind==='star')&&(e.name!=='count'||e.distinct))throw new SqlError('Hanya COUNT(*) menerima tanda *.');
+  if(e.args.some(x=>x.kind==='star')&&(e.name!=='count'||e.distinct||e.args.some(x=>x.kind==='star'&&x.table)))throw new SqlError('Hanya COUNT(*) menerima tanda *.');
 }
 function scalar(name:string,a:Value[]):Value {
   if(name==='coalesce'||name==='ifnull')return a.find(x=>x!==null)??null;
@@ -55,7 +55,7 @@ function scalar(name:string,a:Value[]):Value {
     case 'round':{const p=10**Math.max(0,Math.min(15,num(a[1]??0)));return Math.sign(n)*Math.round(Math.abs(n)*p)/p;}
     case 'length':return Array.from(s).length;case 'lower':return s.replace(/[A-Z]/g,c=>c.toLowerCase());case 'upper':return s.replace(/[a-z]/g,c=>c.toUpperCase());
     case 'trim':case 'ltrim':case 'rtrim':{const chars=a[1]===undefined?' ':String(a[1]);let start=0,end=s.length;if(name!=='rtrim')while(start<end&&chars.includes(s[start]))start++;if(name!=='ltrim')while(end>start&&chars.includes(s[end-1]))end--;return s.slice(start,end);}
-    case 'substr':case 'substring':{const chars=Array.from(s),start=num(a[1]),index=start>0?start-1:start<0?Math.max(0,chars.length+start):0;let length=a[2]===undefined?chars.length:num(a[2]);if(start===0&&length>0)length--;return length<0?chars.slice(Math.max(0,index+length),index).join(''):chars.slice(index,index+length).join('');}
+    case 'substr':case 'substring':{const chars=Array.from(s),start=Math.trunc(num(a[1])),index=start>0?start-1:start<0?chars.length+start:0;let length=a[2]===undefined?chars.length:Math.trunc(num(a[2]));if(start===0&&length>0)length--;const from=length<0?index+length:index,to=length<0?index:index+length;return chars.slice(Math.max(0,from),Math.max(0,to)).join('');}
     case 'replace':return String(a[1])===''?s:s.split(String(a[1])).join(String(a[2]));
     case 'date':case 'datetime':case 'strftime':{
       const input=name==='strftime'?String(a[1]):s;const date=new Date(input==='now'?Date.now():input.length===10?`${input}T00:00:00Z`:input.endsWith('Z')?input:input.replace(' ','T')+'Z');
@@ -72,7 +72,14 @@ export function evaluate(e:Expr,row:Row={},group?:Row[]):Value {
     case 'column':return columnValue(row,e.name,e.table);
     case 'star':throw new SqlError('Tanda * tidak sah dalam ungkapan ini.');
     case 'unary':{const v=evaluate(e.expr,row,group);return e.op==='NOT'?truth(v)===null?null:!truth(v):v===null?null:e.op==='-'?-num(v):num(v);}
-    case 'binary':return binary(e.op,evaluate(e.left,row,group),evaluate(e.right,row,group));
+    case 'binary':{
+      const a=evaluate(e.left,row,group),b=evaluate(e.right,row,group);
+      if((e.op==='IS'||e.op==='IS NOT')&&e.right.kind==='literal'&&typeof e.right.value==='boolean'){
+        const result=truth(a)===e.right.value;return e.op==='IS'?result:!result;
+      }
+      if(e.op==='/'&&a!==null&&b!==null&&(isReal(e.left,row,group)||isReal(e.right,row,group)))return num(b)===0?null:num(a)/num(b);
+      return binary(e.op,a,b);
+    }
     case 'between':{const v=evaluate(e.expr,row,group);const result=logic('AND',binary('>=',v,evaluate(e.low,row,group)),binary('<=',v,evaluate(e.high,row,group)));return e.not&&result!==null?!result:result;}
     case 'in':{const v=evaluate(e.expr,row,group);let result:Value=false;for(const item of e.values){const eq=equal(v,evaluate(item,row,group));if(eq===true){result=true;break;}if(eq===null)result=null;}return e.not&&result!==null?!result:result;}
     case 'case':{const base=e.base?evaluate(e.base,row,group):undefined;for(const b of e.branches){const when=evaluate(b.when,row,group);if(base===undefined?truth(when)===true:equal(base,when)===true)return evaluate(b.then,row,group);}return evaluate(e.otherwise,row,group);}
@@ -87,10 +94,39 @@ export function evaluate(e:Expr,row:Row={},group?:Row[]):Value {
         if(e.name==='sum'||e.name==='avg'){const sum=values.reduce<number>((n,v)=>n+num(v),0);return e.name==='sum'?sum:sum/values.length;}
         return values.reduce((a,b)=>(e.name==='min'?compare(a,b)<=0:compare(a,b)>=0)?a:b);
       }
+      if(e.name==='typeof'&&evaluate(e.args[0],row,group)!==null&&isReal(e.args[0],row,group))return 'real';
       return scalar(e.name,e.args.map(a=>evaluate(a,row,group)));
     }
   }
 }
 export function expressionName(e:Expr):string {
   switch(e.kind){case 'column':return e.name;case 'literal':return e.value===null?'NULL':String(e.value);case 'star':return '*';case 'call':return `${e.name.toUpperCase()}(${e.distinct?'DISTINCT ':''}${e.args.map(expressionName).join(', ')})`;case 'unary':return `${e.op} ${expressionName(e.expr)}`;case 'binary':return `${expressionName(e.left)} ${e.op} ${expressionName(e.right)}`;default:return e.kind.toUpperCase();}
+}
+
+/** Numeric affinity is retained in the bound AST so integral REALs stay real. */
+export function isReal(e:Expr,row:Row={},group?:Row[]):boolean {
+  switch(e.kind){
+    case 'literal':case 'column':return e.real??false;
+    case 'unary':return e.op!=='NOT'&&isReal(e.expr,row,group);
+    case 'binary':return ['+','-','*','/','%'].includes(e.op)&&(isReal(e.left,row,group)||isReal(e.right,row,group));
+    case 'case':{const base=e.base?evaluate(e.base,row,group):undefined;for(const b of e.branches){const value=evaluate(b.when,row,group);if(base===undefined?truth(value)===true:equal(base,value)===true)return isReal(b.then,row,group);}return isReal(e.otherwise,row,group);}
+    case 'call':{
+      if(['avg','round','sqrt','power','floor','ceil','ceiling'].includes(e.name))return true;
+      if(['sum','min','max','abs','nullif'].includes(e.name))return isReal(e.args[0],row,group);
+      if(['coalesce','ifnull'].includes(e.name)){const selected=e.args.find(a=>evaluate(a,row,group)!==null);return !!selected&&isReal(selected,row,group);}return false;
+    }
+    default:return false;
+  }
+}
+export function mapExpression(e:Expr,replace:(e:Expr)=>Expr):Expr {
+ const mapped=replace(e);if(mapped!==e)return mapped;
+ switch(e.kind){
+  case 'unary':return {...e,expr:mapExpression(e.expr,replace)};
+  case 'binary':return {...e,left:mapExpression(e.left,replace),right:mapExpression(e.right,replace)};
+  case 'in':return {...e,expr:mapExpression(e.expr,replace),values:e.values.map(x=>mapExpression(x,replace))};
+  case 'between':return {...e,expr:mapExpression(e.expr,replace),low:mapExpression(e.low,replace),high:mapExpression(e.high,replace)};
+  case 'call':return {...e,args:e.args.map(x=>mapExpression(x,replace))};
+  case 'case':return {...e,base:e.base?mapExpression(e.base,replace):undefined,branches:e.branches.map(b=>({when:mapExpression(b.when,replace),then:mapExpression(b.then,replace)})),otherwise:mapExpression(e.otherwise,replace)};
+  default:return e;
+ }
 }

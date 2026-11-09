@@ -9,8 +9,8 @@ export class SqlError extends Error {
   }
 }
 export type Expr =
-  | {kind:'literal';value:Value}
-  | {kind:'column';name:string;table?:string}
+  | {kind:'literal';value:Value;real?:boolean}
+  | {kind:'column';name:string;table?:string;real?:boolean}
   | {kind:'star';table?:string}
   | {kind:'unary';op:string;expr:Expr}
   | {kind:'binary';op:string;left:Expr;right:Expr}

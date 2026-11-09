@@ -54,10 +54,10 @@ export class Parser {
     if(this.eat('delete')){this.need('from');const table=this.name();const where=this.eat('where')?this.expr():undefined;return {kind:'delete',table,where};}
     return this.fail('SELECT, CREATE, DROP, INSERT, UPDATE atau DELETE');
   }
-  private source():Source{const table=this.name();let alias=table;if(this.eat('as'))alias=this.name();else if(this.t.kind==='word'&&!reserved.has(this.t.value))alias=this.name();return {table,alias};}
+  private source():Source{const table=this.name();let alias=table;if(this.eat('as'))alias=this.name();else if(this.t.kind==='word'&&(!reserved.has(this.t.value)||['"','`','['].includes(this.t.text[0])))alias=this.name();return {table,alias};}
   private select():Select{
     this.need('select');const distinct=this.eat('distinct');if(!distinct)this.eat('all');
-    const columns=this.list(()=>{const expr=this.expr();let alias:string|undefined;if(this.eat('as'))alias=this.name();else if(this.t.kind==='word'&&!reserved.has(this.t.value))alias=this.name();return {expr,alias};});
+    const columns=this.list(()=>{const expr=this.expr();let alias:string|undefined;if(this.eat('as'))alias=this.name();else if(this.t.kind==='word'&&(!reserved.has(this.t.value)||['"','`','['].includes(this.t.text[0])))alias=this.name();return {expr,alias};});
     const q:Select={kind:'select',distinct,columns,joins:[],group:[],order:[]};
     if(this.eat('from')){
       q.from=this.source();
@@ -84,7 +84,7 @@ export class Parser {
     else if(this.eat('null'))left=literal(null);
     else if(this.eat('true'))left=literal(true);
     else if(this.eat('false'))left=literal(false);
-    else if(this.t.kind==='number'){left=literal(Number(this.t.value));this.i++;}
+    else if(this.t.kind==='number'){left={kind:'literal',value:Number(this.t.value),real:/[.eE]/.test(this.t.value)};this.i++;}
     else if(this.t.kind==='string'){left=literal(this.t.value);this.i++;}
     else if(this.eat('case')){
       const base=this.is('when')?undefined:this.expr();const branches:{when:Expr;then:Expr}[]=[];
@@ -96,11 +96,11 @@ export class Parser {
       else if(this.eat('.')){left=this.eat('*')?{kind:'star',table:name}:{kind:'column',table:name,name:this.name()};}
       else left={kind:'column',name};
     }else return this.fail('ungkapan, nama lajur atau nilai');
-    const precedence:Record<string,number>={or:1,and:2,'=':3,'==':3,'!=':3,'<>':3,'<':3,'>':3,'<=':3,'>=':3,is:3,like:3,in:3,between:3,'+':5,'-':5,'*':6,'/':6,'%':6,'||':7};
+    const precedence:Record<string,number>={or:1,and:2,'=':3,'==':3,'!=':3,'<>':3,'<':4,'>':4,'<=':4,'>=':4,is:3,like:3,in:3,between:3,'+':5,'-':5,'*':6,'/':6,'%':6,'||':7};
     for(;;){
       const negated=this.is('not')&&['in','between','like'].includes(this.tokens[this.i+1].value);
       const op=negated?this.tokens[this.i+1].value:this.t.value;
-      const p=precedence[op];if(p===undefined||p<min||this.t.kind==='string')break;
+      const p=precedence[op];if(p===undefined||p<min||this.t.kind==='string'||['"','`','['].includes(this.t.text[0]))break;
       this.i+=negated?2:1;
       if(op==='between'){const low=this.expr(p+1);this.need('and');const high=this.expr(p+1);left={kind:'between',expr:left,low,high,not:negated};}
       else if(op==='in'){this.need('(');const values=this.is(')')?[]:this.list(()=>this.expr());this.need(')');left={kind:'in',expr:left,values,not:negated};}
