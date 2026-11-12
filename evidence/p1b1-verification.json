@@ -1,0 +1,105 @@
+{
+  "milestone": "P1B-1",
+  "baseCommit": "5f25dab28c73b7661268119d7f718d0f76965896",
+  "branch": "feat/vela-p1b1-index-maintenance",
+  "prBase": "feat/vela-p1a-storage-btree",
+  "commands": {
+    "npm run verify": {
+      "exitCode": 0,
+      "skillsEntrypoints": 8,
+      "skillsSupportFiles": 1,
+      "typecheck": "passed",
+      "lint": "passed",
+      "unitPassed": 443,
+      "unitSkipped": 0,
+      "unitFiles": 7,
+      "newUnitTests": 48,
+      "unitDurationSeconds": 58.34,
+      "build": "passed",
+      "buildSeconds": 3.28
+    },
+    "npm run test:production": {
+      "exitCode": 0,
+      "passed": 62,
+      "reportedDuration": "1.4m"
+    },
+    "npm run curated": {
+      "exitCode": 0,
+      "total": 100,
+      "passed": 100,
+      "failed": 0
+    },
+    "npm run fuzz": {
+      "exitCode": 0,
+      "seed": 355866,
+      "total": 5000,
+      "matched": 5000,
+      "mismatches": 0
+    },
+    "npm run benchmark": {
+      "exitCode": 0,
+      "sourceChangedDuringRun": false,
+      "report": "evidence/p1b1-benchmark.json"
+    },
+    "git diff --check": {
+      "exitCode": 0
+    }
+  },
+  "model": {
+    "seeds": [
+      1,
+      7,
+      42,
+      2026,
+      3735928559
+    ],
+    "attemptsPerSeed": 400,
+    "independentReference": true,
+    "twinDeterminism": true
+  },
+  "hardware": {
+    "platform": "linux",
+    "release": "6.18.57",
+    "arch": "x64",
+    "cpuModel": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "visibleLogicalCpus": 3,
+    "availableParallelism": 2,
+    "hostMemoryGiB": 9.734611511230469,
+    "cgroupCpuMax": "200000 100000",
+    "cgroupMemoryMax": "8589934592",
+    "nodeVersion": "v24.22.1",
+    "v8Version": "13.6.233.17-node.58"
+  },
+  "unchangedSelectBindHelpers": true,
+  "fileSha256": {
+    "src/engine/csv.ts": "6969a84959c4687428a711e9d51b50335fda1fa238f82a9eda149d419082fe60",
+    "src/engine/database.ts": "d4435ffc45199fa4c29080762f1d1615e2915cc26dbdf03ea514102763b14a22",
+    "src/engine/datasets.ts": "9c785e7536199bae6bfb1014b3d4042196fc088caa4957df0929e7b16e07f6fa",
+    "src/engine/expression.ts": "1ad0944a313a7bcc2cab8c200bc4878f3bde0968c1b2c4fcc6d461efe79563a3",
+    "src/engine/indexes.ts": "1feeee20cb25dbeec753f9246515c56d909d08f85340e5c0c65285fa6b1a2155",
+    "src/engine/iterator.ts": "b63e1ae0d9c45521858e3f0fac5e32eb9d4915fea240fd82f3c34924c1c3590f",
+    "src/engine/like.ts": "c60e3eb6c8b62093e1849472848f6592f25d743cc3d1323c05e33cec31a8497f",
+    "src/engine/parser.ts": "8939744c9c35bc273a58c10ab4afcefe7d4b328e5af4326f0d61d083dcf9a56b",
+    "src/engine/storage/btree.ts": "c29d0ba1bcab63169f54ed0a94b434b66461294aef9b27ca250c69638e11c62f",
+    "src/engine/storage/codec.ts": "db83e64fe6260154299e6c4b8a21bc5597ab51713388be17146e99be80bdc945",
+    "src/engine/storage/cursor.ts": "97a4d0f7c5080d40272f13d8db8eea7932737b0c75badfcaf6379d8fab2bb045",
+    "src/engine/storage/invariants.ts": "027e5b86905324b11676c1ccd0a83852715c44a5251977a8f6a97172f5788a91",
+    "src/engine/storage/page.ts": "4e4d2f7374bfb3a0c877fa097c9ed8660e4b9517b55f403714fda9e44aa70777",
+    "src/engine/storage/pager.ts": "31c73b78077fa3526f815af03dbe9313ceb5e5a22e59795a24399236c27299fb",
+    "src/engine/storage/table-index.ts": "a85a7f4f2a00da1bcc82007efc694af8dc2ea8cd6f219a975fedcfc40d612267",
+    "src/engine/tokenizer.ts": "656a2ca93c21ac5b64f53548757324ae09c1c0cb62132e131844d88ca34d80bb",
+    "src/engine/types.ts": "b38ce7d26cb7c949f31d304284f02aa31609dcb0a991e2a44364a346fb2d24b0",
+    "tests/index-maintenance.test.ts": "c78556a8e8865b820aa076e68f725b4686fb8c78ab66ebfe54d79e51cd061182",
+    "tools/benchmark.ts": "72298e162d00cc855f71582ddfabefde606ea8e6db33a621d73e4645b7965a10"
+  },
+  "limits": [
+    "memory only",
+    "logical restore resets internal identity lifetime",
+    "explicit indexes only",
+    "no SELECT index access or optimizer",
+    "no WAL/MVCC/transactions",
+    "encoded key <=21823 bytes and <=64 components"
+  ],
+  "delegations": [],
+  "remoteCi": "Not represented by local evidence; see feature PR for observed CI runs."
+}

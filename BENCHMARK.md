@@ -1,5 +1,18 @@
 # Measured performance
 
+## P1B-1 rerun (2026-11-12)
+
+`npm run benchmark` completed after the final P1B-1 build/browser/differential gates. Full samples: [evidence/p1b1-benchmark.json](evidence/p1b1-benchmark.json). Source hashes at start/end match. Hardware: Linux 6.18.57 x64, Intel Xeon Platinum 8573C, Node 24.22.1; 3 visible logical CPUs, available parallelism 2, CPU quota 2 cores, memory limit 8 GiB. Shared-host timing is not a browser or production latency guarantee.
+
+| Asserted workload | Median wall time | p95 | Target status |
+| --- | --- | --- | --- |
+| Point predicate / full scan, 100k rows | 175.821 ms | 205.009 ms | <5 ms not met; no SELECT index access |
+| Aggregate scan, 100k rows | 264.344 ms | 373.013 ms | <1 s met |
+| Materialize 100k rows | 394.688 ms | 403.218 ms | No target |
+| Nested-loop join, 100k × 100 | 4118.031 ms | 4541.747 ms | <1 s not met; no indexed join |
+
+Logical restore median: 211.052 ms; process RSS after queries: 439.0 MiB (not isolated storage allocation). This fixture declares PRIMARY KEY constraints but no explicit CREATE INDEX, so it checks SQL/load regression and does not measure index-maintenance throughput. Explicit trees are maintained in P1B-1; SELECT still scans. Previous measurements below are preserved as historical P0 evidence.
+
 Measured on 2026-11-12. Commands: `npm run benchmark` and `npx tsx tools/browser-profile.ts`. Raw samples are retained in [evidence/benchmark.json](evidence/benchmark.json) and [evidence/browser-profile.json](evidence/browser-profile.json). These are P0 SQL measurements; the measured executor has no physical index access or indexed join. P1A storage is tested separately.
 
 ## Engine environment and method

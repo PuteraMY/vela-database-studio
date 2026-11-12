@@ -1,6 +1,6 @@
 # P1A: independent page storage and B+tree
 
-This module is a memory-backed physical index foundation. It is not imported by the SQL executor, Worker protocol or UI. P0 row arrays, CREATE INDEX catalog behavior, constraints and EXPLAIN remain unchanged. No query optimization, statistics, WAL, MVCC, IndexedDB durability or advanced SQL is implemented here.
+This module is a memory-backed physical index foundation. P1B-1's `../indexes.ts` now uses this unchanged API to maintain explicit SQL catalog indexes with stable row IDs and normalized keys. SELECT still scans P0 row arrays; the Worker protocol, UI and EXPLAIN remain unchanged. No query optimization, statistics, WAL, MVCC, IndexedDB durability or advanced SQL is implemented here.
 
 ## API
 
@@ -79,4 +79,4 @@ Deletion removes one exact pair. Underflow borrows from a surplus left sibling f
 
 `TreeImage` carries version, root ID, slot configuration and a `PagerImage` containing copied page bytes, free IDs, high-water ID and capacity. This is an in-memory structured-clone-compatible boundary for future persistence work, not a durable file/IndexedDB format with atomic crash recovery. Metadata and pages would need coordinated durable publication in P2. Images are typed snapshots; no arbitrary JSON import interface is provided.
 
-`indexTableSnapshot(table, columns, options)` demonstrates indexing keys from a detached P0 table. Its references are zero-based ordinals in that particular snapshot. It does not maintain indexes after SQL mutations, resolve query plans or enforce SQL UNIQUE rules. Raw BOOLEAN values 0/1 and false/true are not affinity-normalized here. P1B must first establish stable row identities, SQL-compatible key normalization and atomic catalog/DML index maintenance before selecting index access paths. Do not plug snapshot ordinals into a mutable row array and claim live index correctness.
+`indexTableSnapshot(table, columns, options)` remains a detached P1A demonstration with zero-based snapshot ordinals and raw physical key semantics. It is not used for live SQL maintenance. P1B-1's separate `../indexes.ts` bridge provides stable IDs, BOOLEAN normalization and atomic catalog/DML maintenance; see the root README and DECISIONS.md. Planner index access remains deferred. Do not use snapshot ordinals as live row identities.

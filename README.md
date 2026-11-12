@@ -2,7 +2,7 @@
 
 A browser-only SQL engine and a studio that shows its actual execution operators. Repository: [PuteraMY/vela-database-studio](https://github.com/PuteraMY/vela-database-studio). Product copy is in Bahasa Melayu. Engine code, comments, and documentation are in English.
 
-The SQL engine and studio implement **P0**. **P1A** adds an independent, tested page-backed B+tree foundation. P1B SQL index integration/optimization, P2 transactions/durable database storage, and P3 advanced SQL are not implemented. Their studio panels explain this explicitly. See [REPORT.md](REPORT.md), [TESTING.md](TESTING.md), and [BENCHMARK.md](BENCHMARK.md) for measured evidence and limitations.
+The SQL engine and studio implement **P0**. **P1A** provides page-backed B+trees; **P1B-1** connects explicit SQL index definitions and atomic DML maintenance to those trees. SELECT still uses P0 scans. Planner index access/optimization, P2 transactions/durable database storage, and P3 advanced SQL are not implemented. See [REPORT.md](REPORT.md), [TESTING.md](TESTING.md), and [BENCHMARK.md](BENCHMARK.md) for evidence and limitations.
 
 ## Run
 
@@ -41,7 +41,7 @@ The eight requested entries are present under `.agents/skills/` and pass structu
 
 - Types: INTEGER, REAL, TEXT, BOOLEAN, and NULL. BOOLEAN results use 0/1.
 - `CREATE TABLE`, `DROP TABLE`, `IF [NOT] EXISTS`, single-column PRIMARY KEY, NOT NULL, UNIQUE, DEFAULT, and single-column foreign keys referencing a unique/primary parent column.
-- `CREATE [UNIQUE] INDEX` and `DROP INDEX` manage the index catalog. Unique indexes enforce composite uniqueness; **SQL catalog definitions are not yet connected to the physical B+tree**.
+- `CREATE [UNIQUE] INDEX` populates real B+trees; INSERT/UPDATE/DELETE maintain them atomically and DROP removes them. Unique indexes enforce composite uniqueness, permitting duplicate keys containing NULL. SELECT does not yet use index access.
 - Multi-row `INSERT`, `UPDATE`, and `DELETE`. Constraint violations do not partially apply a statement.
 - `SELECT`, expressions, aliases, WHERE, DISTINCT, ORDER BY (including ordinals and NULLS FIRST/LAST), LIMIT/OFFSET, CASE, LIKE, BETWEEN, IN lists.
 - COUNT, SUM, AVG, MIN, MAX, DISTINCT aggregate inputs, GROUP BY, and HAVING.
@@ -70,7 +70,7 @@ INTEGER storage is strict, REAL preserves numeric affinity through bound express
 
 `src/engine` has no UI imports or runtime package dependencies. Its handwritten tokenizer records offsets, lines, and columns. A recursive-descent statement parser and Pratt expression parser produce a discriminated TypeScript AST. Binding validates references before scanning, expands aliases/ordinals, rejects invalid aggregates/wildcards, and preserves REAL column affinity.
 
-`Database` holds typed row arrays and index definitions. A mutation clones the candidate state, applies the complete statement, then validates types, uniqueness, nullability, and all foreign keys. The state is published only after validation succeeds. Scripts are parsed before execution; a runtime failure keeps prior successful statements. There is no implicit multi-statement transaction. Large mutations are expensive because of cloning and full constraint validation.
+`Database` holds typed row arrays, private stable row IDs and catalog-backed B+trees. A mutation clones candidate rows/identities, applies the complete statement, validates types/uniqueness/nullability/foreign keys, then prepares detached index changes. Publication occurs only after all stages succeed. Scripts are parsed before execution; a runtime failure keeps prior successful statements. There is no implicit multi-statement transaction. Large mutations remain expensive because of cloning, full constraint validation and copying affected trees.
 
 SELECT uses a pull-based Volcano pipeline. Each `Operator.next()` requests one frame from its children. Scans, nested-loop joins, filters, grouping, projection, distinct, sort, and limit are separate operators. Sorting and grouping are blocking stages. LIMIT can stop streaming scans early. Every operator records actual rows in/out and accumulated execution time; parent timings include child work, so they must not be added together as exclusive CPU times.
 
@@ -86,13 +86,15 @@ CSV copy/export follows the displayed sort order and prefixes formula-looking te
 
 **P1A provides a real independent B+tree** in `src/engine/storage/`: fixed-size byte pages, deterministic allocation/reuse, typed composite-key encoding, exact search, insert/split/root growth, delete/redistribute/merge/root contraction, linked-leaf forward/reverse range scans and automatic structural validation. A detached adapter indexes table-snapshot keys and row ordinals. See [storage architecture and API](src/engine/storage/README.md) for page layout, duplicate/NULL rules and failure boundaries.
 
-SQL still uses P0 row arrays. PRIMARY KEY and UNIQUE are checked with temporary sets during validation; catalog indexes do not accelerate SELECT. The new B+tree is neither a live SQL index nor a visualizer, and makes no indexed-SQL performance claim. Its copied page-image API defines a future persistence boundary but stores no durable data.
+P1B-1's `src/engine/indexes.ts` connects explicit catalog definitions to the storage API. IDs start at 1 per table, survive UPDATE and DELETE of other rows, and are never reused within that table lifetime. Table recreation and logical restore reset the lifetime; logical snapshots preserve the P0 format and rebuild trees. PRIMARY KEY and column UNIQUE constraints remain validation-only unless an explicit index is declared. `inspectRows`, `inspectIndex` and `validateIndexes` are internal diagnostics, not query access paths.
+
+SQL index keys normalize BOOLEAN to 0/1 and -0 to 0; NULL sorts first, followed by numbers then text. Composite keys compare lexicographically; text uses case-sensitive UTF-16 code-unit order, matching P0. No implicit text/number conversion or new collation is introduced. Default slots grow for larger keys through an atomic rebuild, up to 21,823 encoded bytes and 64 key components. Over-limit values fail the statement; overflow pages are not implemented. Catalog indexes do not accelerate SELECT and the studio has no live tree visualizer. Copied page images provide no durability.
 
 There is **no optimizer**. Operators follow SQL semantics with nested-loop joins; no statistics/ANALYZE, cost estimates, predicate pushdown, projection pruning, hash join, or join reordering is implemented.
 
 There is **no WAL or MVCC**. No transaction sessions, savepoints, checkpoints, database IndexedDB persistence, or crash recovery are implemented. Per-statement candidate-state validation provides atomicity only; it is not transaction isolation or durability. BEGIN/COMMIT/ROLLBACK are rejected.
 
-P1B must establish stable row references, SQL-compatible normalization and atomic catalog/DML index maintenance before enabling index query access. Optimizer, WAL and MVCC work remains outside P1A.
+P1B-2 should first define a read-only stable-ID resolver and exact-key index access contract with differential tests before planner integration. Optimizer, WAL and MVCC work remains outside P1B-1.
 
 ## Studio and accessibility
 

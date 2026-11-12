@@ -1,5 +1,15 @@
 import { parse } from "./parser";
 import {
+  allocateRowId,
+  maintainIndexes,
+  restoreIdentities,
+  validateIndexes,
+  type PhysicalIndexes,
+  type RowIdentities,
+  type TableIdentity,
+} from "./indexes";
+import type { TreeImage, TreeOptions } from "./storage/btree";
+import {
   aggregates,
   columnValue,
   compare,
@@ -29,21 +39,65 @@ const qualified = (row: Row, alias: string): Row =>
   Object.fromEntries(Object.entries(row).map(([k, v]) => [`${alias}.${k}`, v]));
 export class Database {
   private state: DatabaseState = { tables: [], indexes: [] };
+  private identities: RowIdentities = new Map();
+  private indexes: PhysicalIndexes = new Map();
+  private readonly indexStorage?: TreeOptions;
+  /** Optional fixed page limits support bounded hosts and deterministic failure tests. */
+  constructor(options: { indexStorage?: TreeOptions } = {}) {
+    this.indexStorage = options.indexStorage
+      ? Object.freeze({ ...options.indexStorage })
+      : undefined;
+  }
   export(): DatabaseState {
     return structuredClone(this.state);
   }
   restore(state: DatabaseState) {
     const copy = structuredClone(state);
     this.validate(copy);
+    const identities = restoreIdentities(copy);
+    const indexes = maintainIndexes(
+      { tables: [], indexes: [] },
+      copy,
+      new Map(),
+      identities,
+      new Map(),
+      this.indexStorage,
+    );
     this.state = copy;
+    this.identities = identities;
+    this.indexes = indexes;
   }
   schema(): SchemaTable[] {
-    return this.state.tables.map((t) => ({
-      name: t.name,
-      columns: t.columns,
-      rowCount: t.rows.length,
-      indexes: this.state.indexes.filter((i) => i.table === t.name),
+    return structuredClone(
+      this.state.tables.map((t) => ({
+        name: t.name,
+        columns: t.columns,
+        rowCount: t.rows.length,
+        indexes: this.state.indexes.filter((i) => i.table === t.name),
+      })),
+    );
+  }
+  /** Detached internal diagnostics; identifiers are not SQL columns or durable handles. */
+  inspectRows(name: string): { rowId: number; row: Row }[] {
+    const table = this.table(name),
+      identity = this.identity(name);
+    return table.rows.map((row, i) => ({
+      rowId: identity.ids[i],
+      row: { ...row },
     }));
+  }
+  inspectIndex(name: string): TreeImage {
+    const tree = this.indexes.get(name);
+    if (!tree) throw new SqlError(`Indeks “${name}” tidak wujud.`);
+    return tree.exportImage();
+  }
+  validateIndexes() {
+    return validateIndexes(this.state, this.identities, this.indexes);
+  }
+  private identity(name: string, identities = this.identities): TableIdentity {
+    const identity = identities.get(name);
+    if (!identity) throw new SqlError(`Identiti jadual “${name}” tidak wujud.`);
+    return identity;
   }
   execute(sql: string): QueryResult[] {
     return parse(sql).map((s) => this.run(s));
@@ -148,7 +202,8 @@ export class Database {
       };
     }
     const start = performance.now(),
-      state = structuredClone(this.state);
+      state = structuredClone(this.state),
+      identities = structuredClone(this.identities);
     let affected = 0;
     switch (s.kind) {
       case "createTable": {
@@ -164,6 +219,7 @@ export class Database {
           if (c.default) evaluate(c.default);
         });
         state.tables.push({ name: s.name, columns: s.columns, rows: [] });
+        identities.set(s.name, { ids: [], nextId: 1 });
         break;
       }
       case "dropTable": {
@@ -172,6 +228,7 @@ export class Database {
           this.table(s.name, state);
         }
         state.tables = state.tables.filter((t) => t.name !== s.name);
+        identities.delete(s.name);
         state.indexes = state.indexes.filter((i) => i.table !== s.name);
         break;
       }
@@ -223,6 +280,8 @@ export class Database {
             row[n] = evaluate(values[i]);
           });
           t.rows.push(row);
+          const identity = this.identity(t.name, identities);
+          identity.ids.push(allocateRowId(identity));
           affected++;
         }
         break;
@@ -264,7 +323,9 @@ export class Database {
         break;
       }
       case "delete": {
-        const t = this.table(s.table, state);
+        const t = this.table(s.table, state),
+          identity = this.identity(t.name, identities),
+          retainedIds: number[] = [];
         if (s.where)
           this.bind(
             s.where,
@@ -274,18 +335,30 @@ export class Database {
             ),
             false,
           );
-        t.rows = t.rows.filter((row) => {
+        t.rows = t.rows.filter((row, i) => {
           const remove =
             !s.where ||
             truth(evaluate(s.where, qualified(row, t.name))) === true;
           if (remove) affected++;
+          else retainedIds.push(identity.ids[i]);
           return !remove;
         });
+        identity.ids = retainedIds;
         break;
       }
     }
     this.validate(state);
+    const indexes = maintainIndexes(
+      this.state,
+      state,
+      this.identities,
+      identities,
+      this.indexes,
+      this.indexStorage,
+    );
     this.state = state;
+    this.identities = identities;
+    this.indexes = indexes;
     return {
       columns: [],
       rows: [],
