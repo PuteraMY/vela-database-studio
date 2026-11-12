@@ -1,8 +1,24 @@
 # Testing record
 
+## P1A verification
+
+P1A is tested independently from the unchanged P0 SQL/Worker/UI. `npm run verify` passed all required gates (skills integrity, strict typecheck, lint, unit tests and production build). **395/395 tests passed across six files, with no skipped or failed tests**; 127 are new P1A tests. Final unit duration was 44.03s. `npm run curated` matched 100/100 expected queries; `npm run fuzz` matched 5000/5000 at seed 355866. These differential checks verify the unchanged SQL executor, not an unimplemented SQL index access path.
+
+New test files: `tests/storage.test.ts`, `tests/btree.test.ts`, with reusable deterministic fixtures in `tests/storage-fixtures.ts`. Coverage includes exact wire bytes, finite numeric boundaries, UTF-16/composite/NULL ordering, invalid keys/encodings, actual fixed-size pages, allocation/reuse, stale batches, defensive copies, failed-split rollback, duplicates, root/leaf/internal structural changes, cursors and restore validation. Real table snapshots demonstrate row-reference retrieval without altering CREATE INDEX constraints, SELECT execution or EXPLAIN behavior.
+
+- Capacities 3/4/5/8/16 × seeds 1/7/42/2026/3735928559: 25 sequences of 1,000 operations, invariant checks after mutation batches, and complete ordered contents/search/range/reverse comparisons against an independently ordered reference list. Failures include capacity, seed, operation number and recent operations for replay.
+- Explicit structural cases assert leaf and internal redistribution in both directions, leaf/internal splits and merges, root growth/contraction and page reuse after full deletion.
+- Large case: 100,000 inserts, full ordered-content comparison, sampled exact lookups, bounded range scan, all 100,000 deletes and batch invariant checks; final state is exactly one empty root leaf. This is a correctness workload, not an indexed-SQL performance or durability claim.
+- Corrupted detached images exercise parent references, separators, duplicate/cyclic child references, leaf links, ordering, occupancy, unreachable pages and unequal depth. A failed import leaves the original tree untouched.
+- Normal-operation failures use page limits to interrupt a split after staged writes; exported images and allocation metadata remain identical. Oversized keys and invalid inputs fail before publication. Process termination/unrecoverable memory exhaustion are outside this guarantee.
+
+Development notes: the first large run was interrupted without a pass claim because unchanged ancestor separators were repeatedly recomputed. Updating only the affected minimum-key path resolved that unnecessary work. A focused structural run then passed 123 tests with the large test explicitly filtered out; the next full focused run passed all 126 then-existing tests in 45.58s. Typecheck also exposed tuple expansion in malformed-byte test fixtures; object-wrapped fixtures fixed it before final verification. Review then identified `0xffffffff` as a non-index property of JavaScript arrays: the pager now caps allocated IDs at `0xfffffffe`, with a regression test. The final 395-test gate includes every test and the 100k workload.
+
+Local P1A logs: `artifacts/p1a-verify.log`, `artifacts/p1a-focused-final.log`, `artifacts/p1a-pager-boundary.log`, `artifacts/p1a-curated.log`, `artifacts/p1a-fuzz.log`. Compact evidence is in `evidence/p1a-verification.json`. No dependency install, subagent, UI change or SQL optimizer work was required. Browser regression is unchanged and runs in the existing GitHub feature-branch/PR workflow; the 62-test P0 browser result below is explicitly historical until the feature check is observed.
+
 ## Scope
 
-P0 is the release boundary. Tests do not pretend to cover absent B+trees, optimizer rules, WAL recovery, MVCC, transactions, or P3 SQL. All commands were run in the supplied Linux workspace. No installation or network blockers remained; npm and Playwright Chromium installed successfully.
+The following sections preserve the P0 baseline record. P1A storage/B+tree verification is recorded above. Optimizer rules, WAL recovery, MVCC, transactions and P3 SQL remain absent. All commands were run in the supplied Linux workspace. No installation or network blockers remained; npm and Playwright Chromium installed successfully.
 
 ## Engine verification
 

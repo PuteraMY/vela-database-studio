@@ -1,6 +1,16 @@
 # VELA delivery and skills integration report
 
-Verified on 2026-11-12. **The P0 engine and studio are complete within the documented SQL subset. P1, P2 and P3 are not implemented. The full original project is therefore not finished.** This continuation preserves the existing application and applies the requested skills to its reliability, UX, testing and release preparation.
+Verified on 2026-11-12. **P0 is verified and P1A now provides an independent, verified page-backed B+tree. P1B SQL integration/optimization, P2 and P3 are not implemented. The full original project is not finished.** This continuation preserves the existing application and applies the requested skills to its reliability, UX, testing and release preparation.
+
+## P1A storage checkpoint
+
+P1A adds real fixed-size Uint8Array pages, deterministic allocation/reuse, bounded slots and deterministic typed/composite-key encoding. The B+tree supports exact search, duplicate pairs, insertion, leaf/internal splitting, root growth, linked-leaf forward/reverse range scans, deletion, redistribution in both directions, leaf/internal merges and root contraction. Structural validation checks occupancy, ordering, exact separators, unique reachability, parent links, common leaf depth and both leaf-link directions. Detached page images are validated on restore; failed normal operations publish no partial page changes.
+
+The final local gates pass: skill integrity, strict typecheck, lint, **395/395 unit tests (127 new)** and production build. Tests include 25 seeded model sequences of 1,000 operations each and a 100,000-entry insert/search/scan/delete workload. Curated SQL remains 100/100 and differential fuzz remains 5000/5000. Final logs and compact source-hashed evidence are recorded in TESTING.md and `evidence/p1a-verification.json`. No tests were skipped in the final gate.
+
+The adapter indexes exported table snapshots only. SQL/CREATE INDEX behavior, EXPLAIN, the Worker and UI are unchanged; the studio still has no live tree visualizer or index access. No P1B planning/optimization, WAL, MVCC, durability or advanced SQL was started. Physical key ordering is deliberately separate from SQL NULL/affinity semantics. The memory image boundary is not crash recovery. Page/slot limits are explicit, and row references are unsigned 32-bit values; snapshot ordinals are not stable identities for mutable SQL rows.
+
+The requested checkpoint is branch `feat/vela-p1a-storage-btree`, submitted as a PR targeting main after local verification. Do not merge automatically. Full module/API/invariant documentation is in [src/engine/storage/README.md](src/engine/storage/README.md). The exact next P1B task is stable row identities and SQL key normalization followed by atomic catalog/DML physical-index maintenance, before index query access is enabled. Work stops at P1A.
 
 ## Skills access, loading and use
 
@@ -33,7 +43,7 @@ This continuation corrected virtual-spacer paint/layout shifts, graph clipping, 
 
 | Executed command/check | Result |
 | --- | --- |
-| `npm run verify` | Skill integrity, strict typecheck, lint, 268/268 unit tests and production build passed; no emitted warnings/errors. |
+| `npm run verify` | Skill integrity, strict typecheck, lint, 395/395 unit tests and production build passed; no emitted warnings/errors. |
 | `npm run test:production` | 62/62 actual-browser tests passed on desktop/mobile; zero skipped/flaky/unexpected tests. |
 | `npm run curated` | 100/100 hand-written expected result sets verified in VELA and SQLite. |
 | `npm run fuzz` | 5,000/5,000 matched (100%), seed 355866, 25 randomized schemas, 20 P0 query categories. |
@@ -72,21 +82,21 @@ Playwright tests, security changes, UI implementation and final documents were r
 
 ## Limitations and next ordered milestone
 
-- **P1 absent:** fixed pages, real B+tree insert/split/delete/redistribute/merge/linked-leaf scans, page reads, statistics/ANALYZE, optimizer transformations/costing, join selection/reordering, estimated EXPLAIN and real tree visualizer. `EXPLAIN ANALYZE` only exposes actual P0 operators with inclusive times.
+- **P1 incomplete:** P1A pages/B+tree are implemented independently; SQL index maintenance/access, page-read reporting in the studio, statistics/ANALYZE, optimizer transformations/costing, join selection/reordering, estimated EXPLAIN and the tree visualizer remain absent. `EXPLAIN ANALYZE` only exposes actual P0 operators with inclusive times.
 - **P2 absent:** BEGIN/COMMIT/ROLLBACK/SAVEPOINT, WAL, recovery, MVCC sessions, durable database IndexedDB storage and checkpointing. Reloading loses database changes; only snippets persist.
 - **P3 absent:** scalar/IN/EXISTS/correlated subqueries, CTEs/recursive CTEs, UNION/INTERSECT/EXCEPT and windows. Three of six guided lessons await these tiers.
 - Results are fully materialized/transferred despite bounded DOM rendering. Mutations clone/validate the database. Large joins/CSV/SQL inputs have no general resource governor or cancel control; large workloads can consume memory/Worker time.
 - Strict storage types and IEEE-754 numbers differ from SQLite affinity/64-bit integers. Date functions implement a documented small UTC subset. Arbitrary SQL compatibility is not promised by the 100% sampled match rate.
 - Only Chromium was exercised. Field performance, real-device behavior, full assistive-technology review and hosted security-header delivery are not verified.
 
-The next engineering tier is P1 storage/index invariants, followed by optimizer selection and real tree/estimated-plan inspection. P2 and P3 remain ordered after a built, tested and committed P1. The project stops here at the verified P0 boundary for this delivery.
+The next authorized milestone requires a new instruction for P1B; P2 and P3 remain ordered after a built, tested and committed P1. This checkpoint stops at P1A, with SQL behavior still at P0.
 
 ## Release assessment
 
-This is a tested educational P0 studio with reproducible evidence and a stronger local development workflow. It is not a completed transactional database or a durable production datastore. The requested eight-name source review is complete, with one original vendor folder verified and seven legacy guides awaiting upstream replacements; native automatic catalog registration is unverified. The full original “done when” bar is not met because later tiers and indexed targets are absent.
+This is a tested educational P0 SQL studio with a separately verified P1A storage foundation and reproducible evidence. It is not a completed transactional database or a durable production datastore. The requested eight-name source review is complete, with one original vendor folder verified and seven legacy guides awaiting upstream replacements; native automatic catalog registration is unverified. The full original “done when” bar is not met because later tiers and indexed targets are absent.
 
 The static build is ready for an approved preview deployment, subject to the explicit P0 limits above. After the user created [PuteraMY/vela-database-studio](https://github.com/PuteraMY/vela-database-studio), the project was published to its main branch. The initial remote commit and owner's MIT license were preserved in merge commit `9b58b91`, along with the full local development history. No unrelated project or shared skills repository was modified. No production site deployment occurred. npm/Chromium/skill access succeeded; omitted engine tiers are scope limits rather than installation failures.
 
-The first [GitHub Actions run](https://github.com/PuteraMY/vela-database-studio/actions/runs/43174807797) passed on `9b58b91366ffb189ac565805a69a3f497b5d6bb1`, independently repeating npm ci, core gates, 268 unit tests, 62 browser tests, curated 100/100, fuzz 5000/5000, zero known audit findings and artifact upload. Actual logs and job statuses were inspected; see `evidence/github-ci.json`. The implementation is unchanged from the locally verified P0 tree. CI does emit nonblocking old-action-runtime/ESLint deprecation and npm lifecycle-policy notices; passing browser console checks do not imply a warning-free dependency installation. Tooling maintenance remains separate from the completed source publication. Deployment checks and rollback steps remain documented in README.md.
+The first [GitHub Actions run](https://github.com/PuteraMY/vela-database-studio/actions/runs/43174807797) passed on `9b58b91366ffb189ac565805a69a3f497b5d6bb1`, independently repeating npm ci, core gates, 268 unit tests, 62 browser tests, curated 100/100, fuzz 5000/5000, zero known audit findings and artifact upload. Actual logs and job statuses were inspected; see `evidence/github-ci.json`. That P0 publication preserved the locally verified implementation; the separate P1A changes are described above. CI does emit nonblocking old-action-runtime/ESLint deprecation and npm lifecycle-policy notices; passing browser console checks do not imply a warning-free dependency installation. Tooling maintenance remains separate from the completed source publication. Deployment checks and rollback steps remain documented in README.md.
 
 Small evidence files are checked into `evidence/`; full logs, browser screenshots and larger generated schemas remain in the gitignored `artifacts/` directory. Every reported gate has a corresponding executed command; generated raw data identifies the measured source and environment.
