@@ -1,0 +1,120 @@
+{
+  "run": {
+    "conclusion": "success",
+    "createdAt": "2026-11-12T07:22:41Z",
+    "headSha": "9b58b91366ffb189ac565805a69a3f497b5d6bb1",
+    "status": "completed",
+    "updatedAt": "2026-11-12T07:23:57Z",
+    "url": "https://github.com/PuteraMY/vela-database-studio/actions/runs/43174807797"
+  },
+  "jobs": [
+    {
+      "id": 131036357185,
+      "name": "verify",
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 43174807797,
+      "logs_url": null,
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1
+        },
+        {
+          "name": "Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2
+        },
+        {
+          "name": "Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3
+        },
+        {
+          "name": "Run npm ci",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4
+        },
+        {
+          "name": "Run npm run verify",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5
+        },
+        {
+          "name": "Run npx playwright install --with-deps chromium",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6
+        },
+        {
+          "name": "Run npm run test:production",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7
+        },
+        {
+          "name": "Run npm run curated",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8
+        },
+        {
+          "name": "Run npm run fuzz",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9
+        },
+        {
+          "name": "Run npm audit --audit-level=moderate",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 10
+        },
+        {
+          "name": "Run actions/upload-artifact@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 11
+        },
+        {
+          "name": "Post Run actions/setup-node@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 21
+        },
+        {
+          "name": "Post Run actions/checkout@v4",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 22
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 23
+        }
+      ]
+    }
+  ],
+  "observedLogCounts": {
+    "unitPassed": 268,
+    "playwrightPassed": 62,
+    "curatedPassed": 100,
+    "fuzzMatched": 5000,
+    "knownAuditVulnerabilities": 0
+  },
+  "scope": "First GitHub push; exact commit is in run.headSha. Later documentation-only commits do not change the tested implementation.",
+  "nonBlockingToolingWarnings": [
+    "actions/checkout@v4, setup-node@v4 and upload-artifact@v4 target deprecated Node 20 and were run on Node 24 by GitHub.",
+    "npm reports eslint@9.39.5 deprecated and esbuild 0.28.2 / 0.25.12 lifecycle scripts not listed in allowScripts.",
+    "Action runtime logs include punycode and url.parse deprecation notices; browser startup console assertions passed."
+  ],
+  "deployment": "No production site deployment performed."
+}

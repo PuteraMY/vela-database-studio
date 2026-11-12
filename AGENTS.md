@@ -29,7 +29,7 @@ Desktop >=1100: schema/editor+results/inspector. Tablet 768–1099: drawer schem
 
 ## Verification and reporting
 
-Never claim a check passed without running it. Keep generated evidence under artifacts (gitignored large output). Report measured timings and hardware. Gate tier completion on all four core commands. Static output is dist. No deployment or external publication is requested.
+Never claim a check passed without running it. Keep generated evidence under artifacts (gitignored large output). Report measured timings and hardware. Gate tier completion on all four core commands. Static output is dist. Source is published to the user-created PuteraMY/vela-database-studio repository; production deployment is not requested.
 
 ## Project-local skills
 

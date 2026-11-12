@@ -105,7 +105,7 @@ Three P0 labs have actual result checkers (SELECT, JOIN, GROUP BY). The index, t
 3. Use Node 22 or 24. No environment variables are needed.
 4. Deploy the static output and verify the Worker and `.wasm` assets load from the same deployment.
 
-`vercel.json` supplies a same-origin CSP and other static security headers. It allows WASM compilation for SQLite and inline styles for CodeMirror; there are no remote script/font dependencies. `.github/workflows/ci.yml` runs the core gates, production browser suite, differential suites and dependency audit. That workflow has only been authored locally; no remote CI result is claimed.
+`vercel.json` supplies a same-origin CSP and other static security headers. It allows WASM compilation for SQLite and inline styles for CodeMirror; there are no remote script/font dependencies. `.github/workflows/ci.yml` runs the core gates, production browser suite, differential suites and dependency audit. The first [GitHub Actions run](https://github.com/PuteraMY/vela-database-studio/actions/runs/43174807797) passed on commit `9b58b91`; exact job steps and remaining tooling notices are recorded in `evidence/github-ci.json`. This verifies GitHub CI, not a deployed production site.
 
 Before an approved release, run the commands above and retain the passing commit and evidence. After deployment, check the actual URL's headers, Worker/WASM responses, initial query, CSV import and mobile layout. If those checks fail, use Vercel's rollback/redeploy action to restore the previous verified deployment. P0 stores no durable database data to migrate; snippets remain in the browser's origin-specific IndexedDB.
 

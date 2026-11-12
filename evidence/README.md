@@ -8,4 +8,4 @@ Differential summaries exclude large generated schema fixtures but retain counts
 
 `security-audit-final.json` is the actual point-in-time npm audit result. `like-before.json` records the safely bounded original backtracking reproduction. `skill-validator-regressions.log` records the three temporary-copy tampering/missing-license probes. The exact source/license hashes and source URLs are checked into `.agents/skills.lock.json`; one selected folder is vendor-original, seven are legacy custom guides. Local copies do not establish runtime discovery or plugin installation.
 
-No remote CI, hosted production, B+tree, WAL or MVCC evidence is claimed.
+`github-ci.json` records the first successful GitHub Actions run after the user created the VELA repository, including the exact tested commit, job steps, counts read from actual logs and nonblocking tooling warnings. This is remote CI evidence, not hosted production verification. No B+tree, WAL, MVCC or production-deployment evidence is claimed.
