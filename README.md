@@ -1,6 +1,6 @@
 # VELA — Studio Pangkalan Data
 
-A browser-only SQL engine and a studio that shows its actual execution operators. Product copy is in Bahasa Melayu. Engine code, comments, and documentation are in English.
+A browser-only SQL engine and a studio that shows its actual execution operators. Repository: [PuteraMY/vela-database-studio](https://github.com/PuteraMY/vela-database-studio). Product copy is in Bahasa Melayu. Engine code, comments, and documentation are in English.
 
 This delivery implements **P0**. P1 physical indexes/optimization, P2 transactions/durable database storage, and P3 advanced SQL are not implemented. Their studio panels explain this explicitly. See [REPORT.md](REPORT.md), [TESTING.md](TESTING.md), and [BENCHMARK.md](BENCHMARK.md) for measured evidence and limitations.
 
@@ -110,3 +110,7 @@ Three P0 labs have actual result checkers (SELECT, JOIN, GROUP BY). The index, t
 Before an approved release, run the commands above and retain the passing commit and evidence. After deployment, check the actual URL's headers, Worker/WASM responses, initial query, CSV import and mobile layout. If those checks fail, use Vercel's rollback/redeploy action to restore the previous verified deployment. P0 stores no durable database data to migrate; snippets remain in the browser's origin-specific IndexedDB.
 
 No Vercel deployment was performed for this delivery. `npm run preview` serves the built output locally for verification. Production publication requires separate approval.
+
+## License
+
+VELA is distributed under the repository owner's MIT license in [LICENSE](LICENSE). Vendored skills retain their own licenses; Anthropic frontend-design is Apache-2.0. See [.agents/SOURCES.md](.agents/SOURCES.md) for that boundary.

@@ -42,3 +42,9 @@ The final `npm run verify` ran skill integrity, typecheck, lint, all unit tests 
 ## Still unverified or unfinished
 
 All P1–P3 behavior, six-lesson completeness, indexed performance targets, field Core Web Vitals, a sustained 60fps guarantee, manual screen-reader conformance, real-device/Safari/Firefox coverage, 500k browser stress performance, automatic skill catalog discovery and deployed-host headers remain unverified or absent. See REPORT.md for the full boundary and next ordered milestone.
+
+## GitHub repository preparation
+
+- Connected the user-created public repository `PuteraMY/vela-database-studio` as origin and aligned the local branch name to main.
+- Merged its initial README/ignore/license commit into the existing seven local commits, preserving the owner's MIT license and both histories. Resolved README/ignore overlaps without engine changes.
+- Remote push and CI results will be recorded after they actually complete. No production deployment is requested.
