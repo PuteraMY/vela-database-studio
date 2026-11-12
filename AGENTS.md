@@ -33,7 +33,7 @@ Never claim a check passed without running it. Keep generated evidence under art
 
 ## Project-local skills
 
-The eight user-selected PuteraMY skills are copied byte-for-byte under `.agents/skills/`; see SKILLS_INTEGRATION.md for applicability and catalog limitations. Run `npm run skills:verify` after changes. User/project constraints override generic server, PostgreSQL, authentication or service recommendations. Do not rewrite the app or add services merely to follow a generic skill. Preserve the MIT notice and locked source hashes. These are project-local files; automatic cloud catalog discovery has not been verified.
+The eight user-selected entries are retained byte-for-byte under `.agents/skills/`; see SKILLS_INTEGRATION.md and `.agents/SOURCES.md` for provenance and catalog limitations. After the upstream migration recheck, frontend-design is the complete original Anthropic folder (Apache-2.0); the seven other names remain legacy custom guides, not official vendor integrations. Run `npm run skills:verify` after changes. User/project constraints override generic server, PostgreSQL, authentication or service recommendations. Do not rewrite the app or add services merely to follow a generic skill. Preserve each source's license and locked hashes; the legacy MIT notice does not cover vendor originals. These are project-local files; automatic cloud catalog discovery has not been verified.
 
 ## Release checks
 
