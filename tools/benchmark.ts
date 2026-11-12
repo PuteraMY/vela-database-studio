@@ -177,7 +177,7 @@ const queries = [
     2,
     7,
     5,
-    "Full table scan. PRIMARY KEY enforces uniqueness but has no physical index in P0.",
+    "Full table scan. PRIMARY KEY enforces uniqueness; this fixture declares no explicit physical index.",
     (result) => assert.deepEqual(result.rows, [[99999, 99, 998.25]]),
   ),
   benchmarkQuery(
@@ -211,7 +211,7 @@ const queries = [
     1,
     3,
     1000,
-    "Nested-loop join with 10,000,000 equality probes; no physical index or hash join in P0.",
+    "Nested-loop join with 10,000,000 equality probes; SELECT has no index access or hash join.",
     (result) => assert.deepEqual(result.rows, [[FACT_ROWS]]),
   ),
 ];
@@ -250,7 +250,7 @@ const report = {
   },
   load: {
     operation:
-      "Database.restore: structured clone + uniqueness, type and foreign-key validation",
+      "Database.restore: structured clone + constraints + fresh internal row identities (fixture has no explicit indexes)",
     warmups: 0,
     repetitions: restoreSamples.length,
     samplesMs: restoreSamples,
@@ -270,7 +270,7 @@ const report = {
   caveats: [
     "Measured in Node.js on a shared Linux execution environment, not an end-user browser. Concurrent development/test work may affect timings.",
     "Wall timings include SQL parse, planning/binding, execution and result materialization; exclude assertion checks, Worker transfer and rendering.",
-    "P0 has no B+tree, fixed-size pages, statistics-driven optimizer or indexed joins. Indexed lookup/join targets are not implemented; measured equivalents use full scans and nested loops.",
+    "P1B-1 maintains explicit B+tree indexes, but SELECT has no index access, statistics-driven optimizer or indexed joins. This fixture declares only PRIMARY KEY constraints; measured queries use full scans and nested loops.",
     "p95 uses the nearest-rank sample percentile. Three-sample p95 is the maximum sample, not a production latency estimate.",
     "Operator times are inclusive downstream pull time and must not be summed as exclusive CPU time.",
   ],

@@ -1,6 +1,20 @@
 # Testing record
 
-## P1A verification
+## P1B-1 verification
+
+`npm run verify` passes skills integrity, strict typecheck, lint, **443/443 unit tests across seven files (zero skipped)** and production build. Final unit duration: 58.34s; build: 3.28s. The added 48 tests cover stable IDs, SQL key normalization, populated/empty/single/composite/UNIQUE indexes, NULLs, all DML, no-op changes, drop/recreation/restore, detached diagnostics, constraint/physical-allocation rollback and exact byte preservation after failed statements.
+
+Five seeds (1, 7, 42, 2026, 3735928559), 400 DML attempts each, compare keys/ordering/row references against an independent reference list every ten steps, validate all tree structures, and compare two independently executed databases for deterministic page images. Failures include seed, step and recent statements. Full P1A tests retain the 100k insert/traverse/delete workload. SQL SELECT is not routed through indexes.
+
+Development corrections: initial focused run had 291 passes and five 5-second test timeouts; all model assertions completed without semantic differences. Snapshot comparisons now serialize exact bytes as hex, avoiding expensive per-byte assertion traversal; seeded workloads also have an explicit 60-second ceiling. Next focused run passed 298/298 in 6.72s. Final review added eager rejection of more than 64 index components even on empty tables; the updated focused suite passed 48/48 in 5.98s before the final core gate.
+
+Logs: `artifacts/p1b1-focused.log`, `p1b1-focused-final.log`, `p1b1-boundary.log`, `p1b1-verify-final.log`. P1A storage algorithms and SQL SELECT/parser/evaluator/Worker/UI/dependency files were checked unchanged against the verified base. No subagents or new dependencies were used.
+
+Release checks ran sequentially after the final build without application/config changes during the browser suite: `npm run test:production` **62/62 passed (1.4m)**, including 360/768/1100/1440 layouts and console/network checks; `npm run curated` **100/100**, `npm run fuzz` **5000/5000**, seed 355866, zero mismatches; `npm run benchmark` completed all asserted workloads. Curated/fuzz exercise supported P0 query semantics; the independent DML reference tests specifically cover P1B-1 maintenance. Benchmark numbers measure unchanged scan/nested-loop access, not physical-index lookup speed. See BENCHMARK.md and `evidence/p1b1-benchmark.json`.
+
+Additional logs: `artifacts/p1b1-production.log`, `p1b1-curated.log`, `p1b1-fuzz.log`, `p1b1-benchmark.log`. Compact core output and verification/source hashes are tracked under `evidence/p1b1-*`. No local check is substituted for remote CI success.
+
+## P1A verification (historical)
 
 P1A is tested independently from the unchanged P0 SQL/Worker/UI. `npm run verify` passed all required gates (skills integrity, strict typecheck, lint, unit tests and production build). **395/395 tests passed across six files, with no skipped or failed tests**; 127 are new P1A tests. Final unit duration was 44.03s. `npm run curated` matched 100/100 expected queries; `npm run fuzz` matched 5000/5000 at seed 355866. These differential checks verify the unchanged SQL executor, not an unimplemented SQL index access path.
 

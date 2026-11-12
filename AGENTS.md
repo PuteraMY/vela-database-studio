@@ -4,7 +4,7 @@
 
 Work alone. Complete and verify P0 (engine + studio) before P1 (pages, B+tree, optimizer), then P2 (transactions, WAL, MVCC), then P3 (advanced SQL). Never represent a placeholder as a completed feature. Record scope decisions in DECISIONS.md and commands/results in PROGRESS.md and TESTING.md. Commit each completed tier or major feature.
 
-Current authorized milestone: P1A only, on `feat/vela-p1a-storage-btree`. Implement independent memory-backed pages and a real B+tree; keep P0 SQL execution, index catalog, EXPLAIN and UI unchanged. Stop after verified P1A and a feature-branch PR; do not merge main or begin P1B, optimization, WAL, MVCC or advanced SQL. No subagents.
+Current authorized milestone: P1B-1 only, on `feat/vela-p1b1-index-maintenance`, based on verified P1A commit `5f25dab28c73b7661268119d7f718d0f76965896`. Add stable internal row identities, SQL-normalized keys and atomic physical index maintenance for catalog/DML operations. Preserve SELECT execution, EXPLAIN, UI and the P1A storage implementation. Stop after verification and a PR targeting the P1A branch; leave PR #1 unchanged. Do not merge, deploy or begin planner integration, optimization, WAL, MVCC or advanced SQL. No subagents.
 
 ## Stack and commands
 
