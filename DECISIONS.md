@@ -1,5 +1,13 @@
 # Decisions
 
+## P1A storage boundary
+
+- Work only on independent storage components, preserving SQL/catalog/EXPLAIN/UI behavior. No verified project-local skill directly applies: frontend-design concerns UI, and database/testing guides remain legacy; none is loaded for this engine milestone.
+- Pages contain actual fixed-size byte arrays, not a Map-backed substitute index. A memory pager owns deterministic positive IDs and reuses the smallest released ID. Per-operation staged writes publish together; this is in-process failure atomicity, not SQL transactions or durability.
+- Use bounded fixed slots and a configurable maximum encoded key size. Reject oversized keys before publication; overflow/variable-length records are deferred. A leaf stores composite key plus an unsigned 32-bit row reference. Internal separators are the exact minimum (key, row reference) of the right subtree.
+- Physical keys use a total order independent of SQL predicates: NULL < BOOLEAN < finite NUMBER < TEXT; composite keys compare lexicographically, shorter prefixes first. Strings preserve UTF-16 code units; -0 normalizes to +0. Repeated keys have distinct row references; an identical pair is an idempotent no-op. SQL affinity, UNIQUE/NULL rules and stable row identities must be addressed explicitly before P1B integration.
+- A tree owns its pager. Detached page images and a versioned root/configuration descriptor define a future persistence boundary without implementing disk/IndexedDB/WAL. A snapshot adapter may index exported table rows by their ordinal; it is not a live SQL index and must be rebuilt after row changes.
+
 - 2026-11-09: Start a new repository at /workspace; work alone as requested.
 - P0 uses row arrays and a catalog of index definitions. Physical page storage and actual B+trees belong to P1; the studio must label those as unavailable until implemented.
 - SQL is case-insensitive for identifiers; string values preserve case. NULL follows SQL three-valued logic. NULL sorts first ascending and last descending (SQLite defaults). BOOLEAN is normalized to 0/1 at result boundaries for SQLite comparison.

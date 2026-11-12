@@ -1,0 +1,80 @@
+{
+  "capturedAt": "2026-11-12T12:33:19.826923+00:00",
+  "milestone": "P1A",
+  "branch": "feat/vela-p1a-storage-btree",
+  "baselineCommit": "30a344cb005d1b4eea57d7cbb7019c412f37cdaa",
+  "storageSha256": "1cbf01a8bfdf0ee1b0dda29f0c42e89d799e8652d75bea5a0201e488496c789d",
+  "storageFiles": [
+    "btree.ts",
+    "codec.ts",
+    "cursor.ts",
+    "invariants.ts",
+    "page.ts",
+    "pager.ts",
+    "table-index.ts"
+  ],
+  "coreGates": {
+    "skills:verify": "passed: 8 entrypoint hashes + 1 support/license hash",
+    "typecheck": "passed",
+    "lint": "passed",
+    "unit": {
+      "passed": 395,
+      "p0Tests": 268,
+      "p1aTests": 127,
+      "skipped": 0,
+      "failed": 0,
+      "files": 6,
+      "durationSeconds": 44.03
+    },
+    "build": "passed"
+  },
+  "workloads": {
+    "modelScenarios": 25,
+    "operationsPerScenario": 1000,
+    "seeds": [
+      1,
+      7,
+      42,
+      2026,
+      3735928559
+    ],
+    "capacities": [
+      3,
+      4,
+      5,
+      8,
+      16
+    ],
+    "largeInsertCount": 100000,
+    "largeDeleteCount": 100000,
+    "largeFinalState": "one empty root leaf"
+  },
+  "sqlRegression": {
+    "curated": {
+      "passed": 100,
+      "failed": 0
+    },
+    "fuzz": {
+      "seed": 355866,
+      "total": 5000,
+      "matched": 5000,
+      "mismatches": 0,
+      "matchRate": 1
+    }
+  },
+  "hardware": {
+    "system": "Linux",
+    "release": "6.18.57",
+    "machine": "x86_64",
+    "visibleCpus": 3,
+    "node": "v24.22.1"
+  },
+  "limits": [
+    "No SQL index activation or optimizer/EXPLAIN changes",
+    "No UI/Worker changes; browser regression is run by existing GitHub workflow",
+    "Memory-backed copied images, not durability/WAL/MVCC",
+    "Fixed key slots; oversized keys fail",
+    "Snapshot adapter row ordinals are not stable mutable-table identities",
+    "No new SQL performance benchmark claims"
+  ]
+}

@@ -4,6 +4,8 @@
 
 Work alone. Complete and verify P0 (engine + studio) before P1 (pages, B+tree, optimizer), then P2 (transactions, WAL, MVCC), then P3 (advanced SQL). Never represent a placeholder as a completed feature. Record scope decisions in DECISIONS.md and commands/results in PROGRESS.md and TESTING.md. Commit each completed tier or major feature.
 
+Current authorized milestone: P1A only, on `feat/vela-p1a-storage-btree`. Implement independent memory-backed pages and a real B+tree; keep P0 SQL execution, index catalog, EXPLAIN and UI unchanged. Stop after verified P1A and a feature-branch PR; do not merge main or begin P1B, optimization, WAL, MVCC or advanced SQL. No subagents.
+
 ## Stack and commands
 
 Vite, React, strict TypeScript without `any`, Zustand, CodeMirror 6, custom CSS/SVG; Vitest and Playwright. SQL engine in src/engine has no UI imports or external runtime dependencies. Execute SQL in a module Web Worker. sql.js is allowed only in differential tests and the SQLite comparison feature.

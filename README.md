@@ -2,7 +2,7 @@
 
 A browser-only SQL engine and a studio that shows its actual execution operators. Repository: [PuteraMY/vela-database-studio](https://github.com/PuteraMY/vela-database-studio). Product copy is in Bahasa Melayu. Engine code, comments, and documentation are in English.
 
-This delivery implements **P0**. P1 physical indexes/optimization, P2 transactions/durable database storage, and P3 advanced SQL are not implemented. Their studio panels explain this explicitly. See [REPORT.md](REPORT.md), [TESTING.md](TESTING.md), and [BENCHMARK.md](BENCHMARK.md) for measured evidence and limitations.
+The SQL engine and studio implement **P0**. **P1A** adds an independent, tested page-backed B+tree foundation. P1B SQL index integration/optimization, P2 transactions/durable database storage, and P3 advanced SQL are not implemented. Their studio panels explain this explicitly. See [REPORT.md](REPORT.md), [TESTING.md](TESTING.md), and [BENCHMARK.md](BENCHMARK.md) for measured evidence and limitations.
 
 ## Run
 
@@ -41,7 +41,7 @@ The eight requested entries are present under `.agents/skills/` and pass structu
 
 - Types: INTEGER, REAL, TEXT, BOOLEAN, and NULL. BOOLEAN results use 0/1.
 - `CREATE TABLE`, `DROP TABLE`, `IF [NOT] EXISTS`, single-column PRIMARY KEY, NOT NULL, UNIQUE, DEFAULT, and single-column foreign keys referencing a unique/primary parent column.
-- `CREATE [UNIQUE] INDEX` and `DROP INDEX` manage the index catalog. Unique indexes enforce composite uniqueness; **these are not physical indexes**.
+- `CREATE [UNIQUE] INDEX` and `DROP INDEX` manage the index catalog. Unique indexes enforce composite uniqueness; **SQL catalog definitions are not yet connected to the physical B+tree**.
 - Multi-row `INSERT`, `UPDATE`, and `DELETE`. Constraint violations do not partially apply a statement.
 - `SELECT`, expressions, aliases, WHERE, DISTINCT, ORDER BY (including ordinals and NULLS FIRST/LAST), LIMIT/OFFSET, CASE, LIKE, BETWEEN, IN lists.
 - COUNT, SUM, AVG, MIN, MAX, DISTINCT aggregate inputs, GROUP BY, and HAVING.
@@ -84,13 +84,15 @@ CSV copy/export follows the displayed sort order and prefixes formula-looking te
 
 ### B+tree, optimizer, WAL and MVCC status
 
-There is **no B+tree** in this version. No fixed-size pages, splits/merges, linked leaves, range scan, or index seek are claimed. PRIMARY KEY and UNIQUE are checked with temporary sets during validation. Catalog index definitions do not accelerate SELECT.
+**P1A provides a real independent B+tree** in `src/engine/storage/`: fixed-size byte pages, deterministic allocation/reuse, typed composite-key encoding, exact search, insert/split/root growth, delete/redistribute/merge/root contraction, linked-leaf forward/reverse range scans and automatic structural validation. A detached adapter indexes table-snapshot keys and row ordinals. See [storage architecture and API](src/engine/storage/README.md) for page layout, duplicate/NULL rules and failure boundaries.
+
+SQL still uses P0 row arrays. PRIMARY KEY and UNIQUE are checked with temporary sets during validation; catalog indexes do not accelerate SELECT. The new B+tree is neither a live SQL index nor a visualizer, and makes no indexed-SQL performance claim. Its copied page-image API defines a future persistence boundary but stores no durable data.
 
 There is **no optimizer**. Operators follow SQL semantics with nested-loop joins; no statistics/ANALYZE, cost estimates, predicate pushdown, projection pruning, hash join, or join reordering is implemented.
 
 There is **no WAL or MVCC**. No transaction sessions, savepoints, checkpoints, database IndexedDB persistence, or crash recovery are implemented. Per-statement candidate-state validation provides atomicity only; it is not transaction isolation or durability. BEGIN/COMMIT/ROLLBACK are rejected.
 
-These systems are the next ordered tiers, not hidden dependencies or mock implementations.
+P1B must establish stable row references, SQL-compatible normalization and atomic catalog/DML index maintenance before enabling index query access. Optimizer, WAL and MVCC work remains outside P1A.
 
 ## Studio and accessibility
 

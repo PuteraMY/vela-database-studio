@@ -1,11 +1,12 @@
 # Progress
 
-Last verified: 2026-11-12. Release boundary: P0. Work continues from the existing application; it was not rebuilt for the skills integration.
+Current milestone: P1A implementation and local verification complete on `feat/vela-p1a-storage-btree`. SQL execution and the studio remain P0. The feature branch is the review checkpoint; main must not be merged automatically.
 
 | Tier | Status | Verified boundary |
 | --- | --- | --- |
 | P0 — engine and playground | Complete with the documented SQL subset and limitations | Handwritten parser/evaluator, atomic constraints, pull operators, Worker execution, responsive studio, comparison, CSV, snippets and three P0 labs. All four core gates pass. |
-| P1 — pages, B+tree, optimizer | Not started | Index catalog/UNIQUE enforcement exists in P0; no physical index or optimizer is claimed. |
+| P1A — physical pages and B+tree | Implemented and locally verified | Fixed byte pages, deterministic pager, full insert/delete/rebalance/range operations, invariant checks and snapshot adapter. Independent of SQL. |
+| P1B — SQL index integration / optimizer | Not started | Catalog definitions still do not select physical index access. No optimizer/statistics/EXPLAIN changes. |
 | P2 — transactions, WAL, MVCC | Not started | Snippet IndexedDB storage is not database persistence. Transaction commands are rejected. |
 | P3 — advanced SQL | Not started | No subqueries, CTEs, set operations or windows. Fuzz/benchmark tooling is available for P0. |
 
@@ -16,12 +17,12 @@ Last verified: 2026-11-12. Release boundary: P0. Work continues from the existin
 | `npm run skills:verify` | Eight entrypoint hashes plus one license hash; one original Anthropic folder, seven legacy custom guides. |
 | `npm run typecheck` | Passed, strict TypeScript. |
 | `npm run lint` | Passed, zero warnings/errors. |
-| `npm test` | 268/268 passed. |
+| `npm test` | 395/395 passed (268 P0 + 127 P1A); zero skipped. |
 | `npm run build` | Passed; local fonts, Worker and SQLite WASM bundled. |
-| `npm run test:production` | 62/62 passed; zero skipped/flaky/unexpected tests. |
+| `npm run test:production` | P0 baseline: 62/62 passed. No UI/Worker changes in P1A; the feature PR CI also runs this regression suite. |
 | `npm run curated` | 100/100 explicit expected results matched VELA and SQLite. |
 | `npm run fuzz` | 5,000/5,000 matched; seed 355866, 25 schemas, supported P0 syntax only. |
-| `npm run benchmark` | Completed with result assertions; aggregate meets target, lookup/join do not. |
+| `npm run benchmark` | Historical P0 SQL measurement, not rerun for P1A. SQL execution is unchanged; no new indexed-SQL performance claim. |
 | `npm audit --json` | Zero known advisory findings in the final locked tree. |
 | `npx tsx tools/inspect-ui.ts` | No page overflow at 360/390/768/1100/1440; no collected page/console errors or warnings. |
 | `npx tsx tools/browser-profile.ts` | Desktop/mobile production lab measurements saved; nonzero frame samples and no collected errors. |
@@ -41,7 +42,7 @@ The final `npm run verify` ran skill integrity, typecheck, lint, all unit tests 
 
 ## Still unverified or unfinished
 
-All P1–P3 behavior, six-lesson completeness, indexed performance targets, field Core Web Vitals, a sustained 60fps guarantee, manual screen-reader conformance, real-device/Safari/Firefox coverage, 500k browser stress performance, automatic skill catalog discovery and deployed-host headers remain unverified or absent. See REPORT.md for the full boundary and next ordered milestone.
+P1B SQL index integration/optimizer, P2/P3 behavior, six-lesson completeness, indexed performance targets, field Core Web Vitals, a sustained 60fps guarantee, manual screen-reader conformance, real-device/Safari/Firefox coverage, 500k browser stress performance, automatic skill catalog discovery and deployed-host headers remain unverified or absent. See REPORT.md for the full boundary and next ordered milestone.
 
 ## GitHub repository publication
 
@@ -50,3 +51,13 @@ All P1–P3 behavior, six-lesson completeness, indexed performance targets, fiel
 - Pushed merge commit `9b58b91366ffb189ac565805a69a3f497b5d6bb1` to origin/main successfully. The engine, tests, dependencies and CI configuration are unchanged from the verified P0 commit.
 - GitHub Actions run [43174807797](https://github.com/PuteraMY/vela-database-studio/actions/runs/43174807797) completed successfully: npm ci, all core gates, 268 unit tests, 62 browser tests, curated 100/100, fuzz 5000/5000, zero known audit vulnerabilities and artifact upload. Evidence: `evidence/github-ci.json`.
 - CI emitted nonblocking dependency/action-runtime deprecation and npm lifecycle-policy notices; these are recorded separately from the passing browser console checks. No production deployment was performed.
+
+## P1A checkpoint
+
+- Seven independent storage modules and their format/API documentation live in `src/engine/storage/`. A tree owns actual fixed-size byte pages; no Map substitutes for its ordered index.
+- 127 new tests cover physical codecs, pager allocation/reuse, atomic failure handling, duplicates/composites/NULLs, all structural changes, reverse/range cursors, image validation and a table-snapshot adapter.
+- Model tests run 25 reproducible capacity/seed combinations with 1,000 operations each, comparing complete ordered contents against an independent reference list after batches. The large case inserts and then deletes 100,000 entries, validates between batches and ends at one empty leaf.
+- Final local `npm run verify`: skills integrity, typecheck, lint, 395 unit tests and build pass. Final unit duration: 44.03s. P0 curated 100/100 and fuzz 5000/5000 also pass. Logs: `artifacts/p1a-*.log`; compact evidence: `evidence/p1a-verification.json`.
+- No existing SQL execution, parser, catalog, EXPLAIN, Worker, UI, runtime dependency or CI configuration file was changed. No subagents or new skill installations were used.
+- Local code is ready for the requested feature-branch push and PR; publication and exact CI status are reported with that checkpoint. No merge or deployment is authorized.
+- Stop after P1A. Exact next P1B task: introduce stable row identities and SQL-normalized keys, then maintain physical indexes atomically with catalog and DML changes before enabling query access paths.

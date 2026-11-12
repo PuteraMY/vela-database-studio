@@ -1,6 +1,6 @@
 # Measured performance
 
-Measured on 2026-11-12. Commands: `npm run benchmark` and `npx tsx tools/browser-profile.ts`. Raw samples are retained in [evidence/benchmark.json](evidence/benchmark.json) and [evidence/browser-profile.json](evidence/browser-profile.json). These are P0 measurements; there is no physical index or indexed join.
+Measured on 2026-11-12. Commands: `npm run benchmark` and `npx tsx tools/browser-profile.ts`. Raw samples are retained in [evidence/benchmark.json](evidence/benchmark.json) and [evidence/browser-profile.json](evidence/browser-profile.json). These are P0 SQL measurements; the measured executor has no physical index access or indexed join. P1A storage is tested separately.
 
 ## Engine environment and method
 
@@ -45,4 +45,4 @@ Before the spacer correction, maximum-session-window CLS during artificial long-
 
 ## Next performance work
 
-Implement P1 fixed pages and a real B+tree before claiming indexed targets. Then measure index selection and join strategies on the same asserted fixture. Separately profile large-result transfer, virtualized scrolling and sorting on real mobile hardware. The 500k generator exists but has not received an equivalent browser stress benchmark. No performance claim is extrapolated from 100k to 500k.
+P1A now implements fixed pages and a real standalone B+tree; SQL still uses the measured P0 executor. These historical SQL numbers are not a P1A index benchmark. P1B must integrate SQL index maintenance/access before measuring index selection and join strategies on the same asserted fixture. Separately profile large-result transfer, virtualized scrolling and sorting on real mobile hardware. The 500k generator exists but has not received an equivalent browser stress benchmark. No performance claim is extrapolated from 100k to 500k.
