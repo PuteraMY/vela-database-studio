@@ -1,0 +1,72 @@
+{
+  "repository": "https://github.com/PuteraMY/PuteraMY-Agent-Skills",
+  "sourceRef": "main",
+  "verifiedDate": "2026-11-12",
+  "mechanism": "Project-local .agents/skills copies, as documented in upstream README. Chat instruction loading verified; runtime catalog discovery must be checked separately.",
+  "skills": [
+    {
+      "name": "frontend-design",
+      "path": ".agents/skills/frontend-design/SKILL.md",
+      "source": "https://github.com/PuteraMY/PuteraMY-Agent-Skills/blob/main/.agents/skills/frontend-design/SKILL.md",
+      "gitBlobSha": "616f3cd1894dcf3a51f13b9e66ac4297dd3c1f6b",
+      "status": "read-and-copied",
+      "scope": "project-local"
+    },
+    {
+      "name": "design-system",
+      "path": ".agents/skills/design-system/SKILL.md",
+      "source": "https://github.com/PuteraMY/PuteraMY-Agent-Skills/blob/main/.agents/skills/design-system/SKILL.md",
+      "gitBlobSha": "b58e082f9d66dbd7190f633de5944994934db012",
+      "status": "read-and-copied",
+      "scope": "project-local"
+    },
+    {
+      "name": "fullstack-development",
+      "path": ".agents/skills/fullstack-development/SKILL.md",
+      "source": "https://github.com/PuteraMY/PuteraMY-Agent-Skills/blob/main/.agents/skills/fullstack-development/SKILL.md",
+      "gitBlobSha": "87d9f7a54a567081e8d097a22e1d45f653d4fdf0",
+      "status": "read-and-copied",
+      "scope": "project-local"
+    },
+    {
+      "name": "database-architecture",
+      "path": ".agents/skills/database-architecture/SKILL.md",
+      "source": "https://github.com/PuteraMY/PuteraMY-Agent-Skills/blob/main/.agents/skills/database-architecture/SKILL.md",
+      "gitBlobSha": "e0627866be8b1e23e387648fc87d1f98c03bb04a",
+      "status": "read-and-copied",
+      "scope": "project-local"
+    },
+    {
+      "name": "security-audit",
+      "path": ".agents/skills/security-audit/SKILL.md",
+      "source": "https://github.com/PuteraMY/PuteraMY-Agent-Skills/blob/main/.agents/skills/security-audit/SKILL.md",
+      "gitBlobSha": "34bf6e1e10e63f5f699efb915f118967005b81eb",
+      "status": "read-and-copied",
+      "scope": "project-local"
+    },
+    {
+      "name": "automated-testing",
+      "path": ".agents/skills/automated-testing/SKILL.md",
+      "source": "https://github.com/PuteraMY/PuteraMY-Agent-Skills/blob/main/.agents/skills/automated-testing/SKILL.md",
+      "gitBlobSha": "e8b48f3acbc37240259d1c8997d054b1e9f713ce",
+      "status": "read-and-copied",
+      "scope": "project-local"
+    },
+    {
+      "name": "performance-optimization",
+      "path": ".agents/skills/performance-optimization/SKILL.md",
+      "source": "https://github.com/PuteraMY/PuteraMY-Agent-Skills/blob/main/.agents/skills/performance-optimization/SKILL.md",
+      "gitBlobSha": "8c1032d0e217171dc9db37de36ee0227e141d8e6",
+      "status": "read-and-copied",
+      "scope": "project-local"
+    },
+    {
+      "name": "deployment-qa",
+      "path": ".agents/skills/deployment-qa/SKILL.md",
+      "source": "https://github.com/PuteraMY/PuteraMY-Agent-Skills/blob/main/.agents/skills/deployment-qa/SKILL.md",
+      "gitBlobSha": "086be7ce66f28ffd98fe421945007376e50eaa56",
+      "status": "read-and-copied",
+      "scope": "project-local"
+    }
+  ]
+}
