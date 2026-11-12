@@ -1,0 +1,68 @@
+{
+  "capturedAt": "2026-11-12T07:10:25.898617+00:00",
+  "engineSha256": "d36bf25023f7b528c034ac5cc6fb2d21b9838863883c53d4ebf547ce0381d707",
+  "commands": {
+    "npm run verify": "passed: skill integrity, strict typecheck, lint, 268 unit tests, build",
+    "npm run test:production": {
+      "startTime": "2026-11-12T07:06:03.454Z",
+      "duration": 67080.93800000001,
+      "expected": 62,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "npm run curated": {
+      "total": 100,
+      "passed": 100
+    },
+    "npm run fuzz": {
+      "seed": 355866,
+      "total": 5000,
+      "matched": 5000,
+      "mismatches": 0,
+      "matchRate": 1
+    },
+    "npm run benchmark": {
+      "sourceChangedDuringRun": false,
+      "sourceHashVerifiedAgainstCurrentTree": true
+    },
+    "npm audit --json": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "npx tsx tools/inspect-ui.ts": "five viewport widths; no overflow; no collected console/page errors or warnings",
+    "npx tsx tools/browser-profile.ts": "completed; nonzero frames and no errors in both contexts",
+    "python3 temporary-copy validator negative probes": "3/3 passed; no source files modified"
+  },
+  "skillSources": {
+    "entrypoints": 8,
+    "supportFiles": 1,
+    "vendorOriginal": [
+      "frontend-design"
+    ],
+    "legacyCustom": [
+      "design-system",
+      "fullstack-development",
+      "database-architecture",
+      "security-audit",
+      "automated-testing",
+      "performance-optimization",
+      "deployment-qa"
+    ],
+    "runtimeCatalog": {
+      "skills": [],
+      "registrationVerified": false
+    }
+  },
+  "limitations": [
+    "P1/P2/P3 absent",
+    "Chromium only",
+    "Local verification, no remote CI or deployment",
+    "SQL match rate applies only to sampled P0 subset",
+    "One vendor-original skill folder does not certify the entire shared skill collection"
+  ]
+}

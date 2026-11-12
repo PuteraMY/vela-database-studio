@@ -1,0 +1,44 @@
+{
+  "date": "2026-11-12T07:08:17.561Z",
+  "browser": "158.0.8127.18",
+  "url": "http://127.0.0.1:4173",
+  "scope": "One desktop and one mobile lab run; no CPU/network throttling. Event Timing maximum is a lab interaction proxy, not field INP. Frame sample combines 100k-result Worker roundtrip/render and 60 scripted scroll frames. CLS uses maximum session windows; initial CLS is captured before input, workload CLS includes artificial large scroll jumps and is not a field CWV score. LCP may be finalized by first interaction.",
+  "samples": [
+    {
+      "width": 1440,
+      "readyMs": 407.4875699999999,
+      "queryRoundtripMs": 682.7297900000001,
+      "lcpMs": 424,
+      "initialCls": 0.004108910038638017,
+      "scriptedWorkloadCls": 0.006505943769290123,
+      "maxObservedInteractionMs": 56,
+      "longTasks": [
+        54
+      ],
+      "frameSamples": 99,
+      "medianFrameMs": 16.699999999999818,
+      "p95FrameMs": 16.700000000000273,
+      "maxFrameMs": 50,
+      "domRows": 13,
+      "resourceBytes": 311648,
+      "errors": []
+    },
+    {
+      "width": 390,
+      "readyMs": 310.36629600000015,
+      "queryRoundtripMs": 543.5152639999997,
+      "lcpMs": 244,
+      "initialCls": 0.006109049315498764,
+      "scriptedWorkloadCls": 0.006109049315498764,
+      "maxObservedInteractionMs": 64,
+      "longTasks": [],
+      "frameSamples": 91,
+      "medianFrameMs": 16.699999999999818,
+      "p95FrameMs": 16.700000000000273,
+      "maxFrameMs": 33.399999999999864,
+      "domRows": 17,
+      "resourceBytes": 297540,
+      "errors": []
+    }
+  ]
+}

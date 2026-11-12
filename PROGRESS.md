@@ -1,19 +1,44 @@
 # Progress
 
-- Repository rules created and git initialized.
-- P0: in progress; engine, studio and validation pending.
-- P1: not started.
-- P2: not started.
-- P3: not started.
-- No test/build/performance claims yet.
+Last verified: 2026-11-12. Release boundary: P0. Work continues from the existing application; it was not rebuilt for the skills integration.
 
-## Engine P0 milestone
-- Implemented dependency-free tokenizer, parser, expression evaluator, atomic row storage/constraints, and pull-based operators.
-- 203 Vitest tests passed. Typecheck and lint passed with zero warnings after correcting hook dependencies.
-- Fixed worker build failure by setting ES module worker output (SQLite comparison is dynamically imported).
-- Worker-backed initial playground and three datasets built. Full studio design and browser verification still pending; P0 tier is NOT marked complete yet.
+| Tier | Status | Verified boundary |
+| --- | --- | --- |
+| P0 — engine and playground | Complete with the documented SQL subset and limitations | Handwritten parser/evaluator, atomic constraints, pull operators, Worker execution, responsive studio, comparison, CSV, snippets and three P0 labs. All four core gates pass. |
+| P1 — pages, B+tree, optimizer | Not started | Index catalog/UNIQUE enforcement exists in P0; no physical index or optimizer is claimed. |
+| P2 — transactions, WAL, MVCC | Not started | Snippet IndexedDB storage is not database persistence. Transaction commands are rejected. |
+| P3 — advanced SQL | Not started | No subqueries, CTEs, set operations or windows. Fuzz/benchmark tooling is available for P0. |
 
-## P0 engine review fixes
-- Independent review reproduced 18 semantic/validation failures. Root fixed REAL affinity, comparison precedence, alias binding, wildcard/ordinal validation, ASCII-only LIKE case folding with Unicode characters, boolean IS predicates, and negative SUBSTR bounds.
-- 221/221 unit tests now pass, including all 18 regressions; typecheck/lint/build passed. Build split into editor/react/app chunks without size warnings.
-- Initial differential evidence: curated 100/100, fuzz 4922/5000. Repeat run after fixes pending; initial result is not the final match rate.
+## Verified commands
+
+| Command | Observed result |
+| --- | --- |
+| `npm run skills:verify` | Eight entrypoint hashes plus one license hash; one original Anthropic folder, seven legacy custom guides. |
+| `npm run typecheck` | Passed, strict TypeScript. |
+| `npm run lint` | Passed, zero warnings/errors. |
+| `npm test` | 268/268 passed. |
+| `npm run build` | Passed; local fonts, Worker and SQLite WASM bundled. |
+| `npm run test:production` | 62/62 passed; zero skipped/flaky/unexpected tests. |
+| `npm run curated` | 100/100 explicit expected results matched VELA and SQLite. |
+| `npm run fuzz` | 5,000/5,000 matched; seed 355866, 25 schemas, supported P0 syntax only. |
+| `npm run benchmark` | Completed with result assertions; aggregate meets target, lookup/join do not. |
+| `npm audit --json` | Zero known advisory findings in the final locked tree. |
+| `npx tsx tools/inspect-ui.ts` | No page overflow at 360/390/768/1100/1440; no collected page/console errors or warnings. |
+| `npx tsx tools/browser-profile.ts` | Desktop/mobile production lab measurements saved; nonzero frame samples and no collected errors. |
+| `git diff --check` | Passed before release commit. |
+
+The final `npm run verify` ran skill integrity, typecheck, lint, all unit tests and build together after implementation and profiling-harness changes. Small reproducible evidence is checked into `evidence/`; full local logs and screenshots remain in `artifacts/`.
+
+## Milestones and corrections
+
+1. Created AGENTS.md, initialized git, implemented and committed the P0 engine/initial Worker playground. Original 203 tests and core gates passed.
+2. Independent bounded testing found 18 semantic/validation regressions and 78 differential mismatches. Root fixed REAL affinity, comparison precedence, aliases, wildcard/ordinal validation, Unicode LIKE, boolean IS and SUBSTR bounds; committed those fixes.
+3. Built and committed the responsive studio and actual iterator trace inspection. Completed browser verification and corrected twelve initial UI/accessibility rough edges, then additional export, graph and keyboard issues.
+4. Read and copied the eight requested PuteraMY skills; verified their exact contents and committed the integration. Runtime catalog registration remains unverified. No new agents were used for this continuation.
+5. Applied the skills to existing code: bounded LIKE, safe CSV export, typed comparison diffs, shared design tokens, keyboard tabs, larger plan graphs, dependency remediation, static headers and repeatable production QA.
+6. Completed final core/browser/differential checks, measured engine/browser performance and wrote the release documentation. No production deployment or remote CI run occurred.
+7. Rechecked the user's updated official-source migration: only frontend-design changed among the original eight names. Verified its mirror against Anthropic, copied the complete two-file original folder including Apache-2.0 license, classified the other seven as legacy, and adapted local validation without modifying vendor files. Three negative tamper/missing-license probes passed. No shared-repository changes or extra skill installations occurred.
+
+## Still unverified or unfinished
+
+All P1–P3 behavior, six-lesson completeness, indexed performance targets, field Core Web Vitals, a sustained 60fps guarantee, manual screen-reader conformance, real-device/Safari/Firefox coverage, 500k browser stress performance, automatic skill catalog discovery and deployed-host headers remain unverified or absent. See REPORT.md for the full boundary and next ordered milestone.

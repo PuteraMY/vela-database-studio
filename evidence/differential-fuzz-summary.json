@@ -1,0 +1,121 @@
+{
+  "command": "npm run fuzz",
+  "seed": 355866,
+  "total": 5000,
+  "matched": 5000,
+  "mismatches": 0,
+  "matchRate": 1,
+  "elapsedMs": 2700.571266,
+  "schemaCount": 25,
+  "comparison": "Ordered values, excluding labels; numeric relative/absolute tolerance 1e-10. Both successful execution and equal results required. Every query specifies deterministic ordering where multiple rows matter.",
+  "scope": "P0 supported syntax: randomized typed schemas/data, NULLs, expressions, predicates, scalar functions, inner/left/cross/multi joins, aggregates, GROUP BY/HAVING, DISTINCT, ORDER BY, LIMIT/OFFSET.",
+  "excluded": [
+    "P3 subqueries (scalar, IN, EXISTS, correlated)",
+    "CTEs, set operations, window functions",
+    "P1 optimizer/index access semantics",
+    "P2 WAL/MVCC/transactions"
+  ],
+  "unsupportedProbesExcludedFromTotals": [
+    {
+      "sql": "SELECT (SELECT 1)",
+      "result": {
+        "error": "Baris 1, lajur 16: Token \u201c1\u201d tidak dijangka. Jangkaan: )."
+      }
+    },
+    {
+      "sql": "SELECT 1 WHERE 1 IN (SELECT 1)",
+      "result": {
+        "error": "Baris 1, lajur 29: Token \u201c1\u201d tidak dijangka. Jangkaan: )."
+      }
+    },
+    {
+      "sql": "SELECT 1 WHERE EXISTS (SELECT 1)",
+      "result": {
+        "error": "Baris 1, lajur 31: Token \u201c1\u201d tidak dijangka. Jangkaan: )."
+      }
+    }
+  ],
+  "categories": {
+    "string-functions": {
+      "total": 229,
+      "matched": 229
+    },
+    "distinct-and-null-order": {
+      "total": 264,
+      "matched": 264
+    },
+    "integer-arithmetic": {
+      "total": 257,
+      "matched": 257
+    },
+    "real-arithmetic": {
+      "total": 256,
+      "matched": 256
+    },
+    "nullif-ifnull": {
+      "total": 274,
+      "matched": 274
+    },
+    "multi-join": {
+      "total": 240,
+      "matched": 240
+    },
+    "aggregate-distinct": {
+      "total": 246,
+      "matched": 246
+    },
+    "aggregate": {
+      "total": 238,
+      "matched": 238
+    },
+    "left-join": {
+      "total": 256,
+      "matched": 256
+    },
+    "group-and-having": {
+      "total": 234,
+      "matched": 234
+    },
+    "date-and-math-functions": {
+      "total": 258,
+      "matched": 258
+    },
+    "alias-group-order": {
+      "total": 245,
+      "matched": 245
+    },
+    "case-coalesce": {
+      "total": 242,
+      "matched": 242
+    },
+    "predicate-projection": {
+      "total": 258,
+      "matched": 258
+    },
+    "scalar-constant-null": {
+      "total": 241,
+      "matched": 241
+    },
+    "limit-offset": {
+      "total": 272,
+      "matched": 272
+    },
+    "inner-join": {
+      "total": 252,
+      "matched": 252
+    },
+    "cross-join": {
+      "total": 239,
+      "matched": 239
+    },
+    "filter-three-valued-logic": {
+      "total": 254,
+      "matched": 254
+    },
+    "left-join-aggregate": {
+      "total": 245,
+      "matched": 245
+    }
+  },
+  "failures": []
+}

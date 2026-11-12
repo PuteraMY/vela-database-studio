@@ -1,0 +1,6 @@
+.agents/skills/
+.agents/skills.lock.json
+artifacts/
+evidence/
+dist/
+node_modules/

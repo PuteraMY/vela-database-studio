@@ -1,0 +1,130 @@
+{
+  "issues": [],
+  "layouts": [
+    {
+      "width": 1440,
+      "scrollWidth": 1440,
+      "bodyWidth": 1440,
+      "editor": {
+        "x": 264,
+        "y": 147,
+        "width": 826,
+        "height": 342.796875,
+        "top": 147,
+        "right": 1090,
+        "bottom": 489.796875,
+        "left": 264
+      },
+      "results": {
+        "x": 264,
+        "y": 505.796875,
+        "width": 826,
+        "height": 421.203125,
+        "top": 505.796875,
+        "right": 1090,
+        "bottom": 927,
+        "left": 264
+      }
+    },
+    {
+      "width": 1100,
+      "scrollWidth": 1100,
+      "bodyWidth": 1100,
+      "editor": {
+        "x": 264,
+        "y": 147,
+        "width": 486,
+        "height": 342.796875,
+        "top": 147,
+        "right": 750,
+        "bottom": 489.796875,
+        "left": 264
+      },
+      "results": {
+        "x": 264,
+        "y": 505.796875,
+        "width": 486,
+        "height": 421.203125,
+        "top": 505.796875,
+        "right": 750,
+        "bottom": 927,
+        "left": 264
+      }
+    },
+    {
+      "width": 768,
+      "scrollWidth": 768,
+      "bodyWidth": 768,
+      "editor": {
+        "x": 24,
+        "y": 146,
+        "width": 720,
+        "height": 360,
+        "top": 146,
+        "right": 744,
+        "bottom": 506,
+        "left": 24
+      },
+      "results": {
+        "x": 24,
+        "y": 522,
+        "width": 720,
+        "height": 420,
+        "top": 522,
+        "right": 744,
+        "bottom": 942,
+        "left": 24
+      }
+    },
+    {
+      "width": 390,
+      "scrollWidth": 390,
+      "bodyWidth": 390,
+      "editor": {
+        "x": 0,
+        "y": 124,
+        "width": 390,
+        "height": 772,
+        "top": 124,
+        "right": 390,
+        "bottom": 896,
+        "left": 0
+      },
+      "results": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      }
+    },
+    {
+      "width": 360,
+      "scrollWidth": 360,
+      "bodyWidth": 360,
+      "editor": {
+        "x": 0,
+        "y": 124,
+        "width": 360,
+        "height": 772,
+        "top": 124,
+        "right": 360,
+        "bottom": 896,
+        "left": 0
+      },
+      "results": {
+        "x": 0,
+        "y": 0,
+        "width": 0,
+        "height": 0,
+        "top": 0,
+        "right": 0,
+        "bottom": 0,
+        "left": 0
+      }
+    }
+  ]
+}

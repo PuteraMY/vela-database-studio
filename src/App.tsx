@@ -1,48 +1,692 @@
-import {useEffect,useRef,useState} from 'react';
-import {useStudio} from './state/studio';
-import {datasetNames,type Dataset} from './engine/datasets';
-import {Editor} from './components/Editor';
-import {Schema} from './components/Schema';
-import {Results} from './components/Results';
-import {Inspector,type InspectorTab} from './components/Inspector';
-import {Icon,type IconName} from './components/Icon';
-import {Dialog} from './components/Dialog';
-import {Labs} from './components/Labs';
-import {snippets,saveSnippet,deleteSnippet,type Snippet} from './state/persistence';
-type Modal='command'|'history'|'snippets'|'import'|'generate'|'labs'|null;
-type MobilePanel='editor'|'hasil'|'pelan'|'pokok'|'skema';
-const mobileTabs:{id:MobilePanel;label:string;icon:IconName}[]=[{id:'editor',label:'Editor',icon:'code'},{id:'hasil',label:'Hasil',icon:'table'},{id:'pelan',label:'Pelan',icon:'layers'},{id:'pokok',label:'Pokok',icon:'tree'},{id:'skema',label:'Skema',icon:'database'}];
-export default function App(){
- const s=useStudio(),[modal,setModal]=useState<Modal>(null),[dense,setDense]=useState(false),[inspector,setInspector]=useState<InspectorTab>('pelan'),[mobile,setMobile]=useState<MobilePanel>('editor'),[drawer,setDrawer]=useState(false),[toast,setToast]=useState(''),[saved,setSaved]=useState<Snippet[]>([]),[search,setSearch]=useState(''),[csv,setCsv]=useState(''),[count,setCount]=useState(10000);
- const touch=useRef<{x:number;y:number}|null>(null),toastTimer=useRef<ReturnType<typeof setTimeout>|null>(null);
- function notify(message:string){setToast(message);if(toastTimer.current)clearTimeout(toastTimer.current);toastTimer.current=setTimeout(()=>setToast(''),4200);}
- const run=async()=>{await useStudio.getState().run();if(window.innerWidth<768)setMobile('hasil');};
- useEffect(()=>{if(!useStudio.getState().ready&&!useStudio.getState().busy)void useStudio.getState().load('sekolah');},[]);
- useEffect(()=>{const handler=(e:KeyboardEvent)=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();if(!document.querySelector('dialog[open]')){void useStudio.getState().run().then(()=>{if(window.innerWidth<768)setMobile('hasil');});}}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setModal(m=>m==='command'?null:'command');setSearch('');}if(e.key==='Escape')setDrawer(false);};window.addEventListener('keydown',handler);return()=>window.removeEventListener('keydown',handler);},[]);
- useEffect(()=>{if(modal==='snippets')void snippets().then(setSaved).catch(()=>notify('Petikan tidak dapat dibaca daripada storan setempat.'));},[modal]);
- useEffect(()=>()=>{if(toastTimer.current)clearTimeout(toastTimer.current);},[]);
- const choosePanel=(panel:MobilePanel)=>{setMobile(panel);if(panel==='pelan'||panel==='pokok')setInspector(panel);};
- const commands=[{label:'Jalankan pertanyaan',hint:'Ctrl ↵',icon:'play' as IconName,action:()=>{setModal(null);void run();}},{label:'Pertanyaan baharu',hint:'SQL',icon:'plus' as IconName,action:()=>{s.setSql('-- Tulis pertanyaan anda di sini\nSELECT ');setModal(null);setMobile('editor');}},{label:'Buka sejarah pertanyaan',hint:'Sesi ini',icon:'clock' as IconName,action:()=>setModal('history')},{label:'Petikan tersimpan',hint:'Setempat',icon:'save' as IconName,action:()=>setModal('snippets')},{label:'Import CSV',hint:'Data anda',icon:'upload' as IconName,action:()=>setModal('import')},{label:'Jana data ujian',hint:'10k – 500k',icon:'database' as IconName,action:()=>setModal('generate')},{label:'Makmal berpandu',hint:'Belajar SQL',icon:'book' as IconName,action:()=>setModal('labs')},{label:'Tukar kepadatan paparan',hint:dense?'Padat':'Selesa',icon:'settings' as IconName,action:()=>{setDense(!dense);setModal(null);}}];
- return <div className={`app ${dense?'density-compact':''}`}>
-  <header className="topbar"><a href="#" className="brand" aria-label="VELA Studio Pangkalan Data" onClick={e=>e.preventDefault()}><svg className="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 3 4 26h10L16 3Z" fill="#2EE6C5"/><path d="m19 5 9 21H17L19 5Z" fill="#E8EDF5"/><path d="M4 29h24" stroke="#2EE6C5" strokeWidth="1.5"/></svg><span>VELA</span><span className="brand-divider"/><span className="brand-subtitle">Studio Pangkalan Data</span></a><div className="topbar-right"><span className="local-status"><span className="live-dot"/>SETEMPAT</span><button className="command-trigger" onClick={()=>{setModal('command');setSearch('');}}><Icon name="search" size={14}/><span>Cari arahan…</span><kbd>⌘ K</kbd></button><button className="density-button icon-button" aria-label="Tukar kepadatan" aria-pressed={dense} title="Tukar kepadatan" onClick={()=>setDense(!dense)}><Icon name="settings" size={18}/></button><span className="avatar" title="Ruang kerja setempat">V</span></div></header>
-  <div className="workspace-bar"><div className="workspace-location"><button className="drawer-toggle icon-button" aria-label="Buka skema" aria-expanded={drawer} onClick={()=>setDrawer(!drawer)}><Icon name="database" size={18}/></button><span className="workspace-icon"><Icon name="database" size={17}/></span><label className="dataset-picker"><span>SET DATA</span><select aria-label="Set data" disabled={s.busy} value={s.dataset} onChange={e=>{void s.load(e.target.value as Dataset);notify('Set data contoh dimuat semula. Data sesi terdahulu diganti.');}}>{Object.entries(datasetNames).map(([value,name])=><option key={value} value={value}>{name}</option>)}</select></label><span className="workspace-separator"/><span className="workspace-description">Teroka. Tanyakan. Fahami.</span></div><div className="workspace-actions"><button className="text-button labs-trigger" onClick={()=>setModal('labs')}><Icon name="book"/>Makmal berpandu<Icon name="arrow" size={13}/></button><button className="primary-button run-button" aria-label="Jalankan pertanyaan" disabled={s.busy||!s.sql.trim()} onClick={()=>void run()}><Icon name="play" size={14}/><span>{s.busy?'Menjalankan…':'Jalankan'}</span><kbd>⌘ ↵</kbd></button></div></div>
-  <main className={`workspace-grid mobile-${mobile} ${drawer?'drawer-open':''}`} onTouchStart={e=>{if((e.target as HTMLElement).closest('.table-scroll,.cm-editor,input,button,select'))return;touch.current={x:e.touches[0].clientX,y:e.touches[0].clientY};}} onTouchEnd={e=>{if(!touch.current)return;const dx=e.changedTouches[0].clientX-touch.current.x,dy=e.changedTouches[0].clientY-touch.current.y;touch.current=null;if(window.innerWidth<768&&Math.abs(dx)>70&&Math.abs(dx)>Math.abs(dy)*2){const i=mobileTabs.findIndex(t=>t.id===mobile),next=Math.max(0,Math.min(4,i+(dx<0?1:-1)));choosePanel(mobileTabs[next].id);}}}>
-   {drawer&&<button className="drawer-scrim" aria-label="Tutup skema" onClick={()=>setDrawer(false)}/>}
-   <aside className="schema-panel" aria-label="Penjelajah skema"><Schema onImport={()=>setModal('import')} onGenerate={()=>setModal('generate')} onSelect={()=>{setMobile('editor');setDrawer(false);}}/></aside>
-   <section className="editor-panel" aria-label="Ruang editor"><div className="editor-tabs"><div className="file-tab"><Icon name="code" size={15}/><span>pertanyaan_01.sql</span><span className="file-dot"/></div><button className="icon-button" aria-label="Pertanyaan baharu" title="Pertanyaan baharu" onClick={()=>{s.setSql('-- Tulis pertanyaan anda di sini\nSELECT ');notify('Pertanyaan baharu dibuka. Hasil terdahulu masih boleh dilihat.');}}><Icon name="plus" size={17}/></button><div className="editor-tools"><button className="icon-button" aria-label="Sejarah pertanyaan" title="Sejarah pertanyaan" onClick={()=>setModal('history')}><Icon name="clock" size={16}/></button><button className="icon-button" aria-label="Simpan petikan" title="Simpan petikan" disabled={!s.sql.trim()} onClick={()=>void saveSnippet(s.sql).then(()=>notify('Petikan disimpan dalam pelayar ini.')).catch(()=>notify('Petikan gagal disimpan. Storan mungkin penuh.'))}><Icon name="save" size={16}/></button><button className="icon-button" aria-label="Petikan tersimpan" title="Petikan tersimpan" onClick={()=>setModal('snippets')}><Icon name="book" size={16}/></button></div></div><div className="editor-caption"><span>PERTANYAAN</span><span>SQL<span className="caption-dot">·</span><span>VELA</span></span></div><Editor/><div className="editor-footer"><span><Icon name="bolt" size={12}/><kbd>Ctrl</kbd> + <kbd>Enter</kbd> untuk menjalankan</span><span>{s.sql.split('\n').length} baris <i/> UTF-8</span></div></section>
-   <section className="results-panel" aria-label="Ruang hasil"><Results dense={dense} toast={notify}/></section>
-   <aside className="inspector-panel" aria-label="Pemeriksa"><Inspector tab={inspector} setTab={setInspector}/></aside>
-  </main>
-  <footer className="statusbar"><div><span className="live-dot"/><span>{s.busy?'Enjin sedang bekerja':'Web Worker aktif'}</span><span className="status-divider"/><span>Enjin VELA <b>v0.1.0</b></span></div><div><span>Data sesi dalam memori</span><span className="status-divider"/><span>Dibina untuk memahami.</span><Icon name="code" size={13}/></div></footer>
-  <nav className="mobile-nav" aria-label="Panel studio">{mobileTabs.map(t=><button key={t.id} aria-current={mobile===t.id?'page':undefined} onClick={()=>choosePanel(t.id)}><Icon name={t.icon} size={19}/><span>{t.label}</span></button>)}</nav>
-  {toast&&<div className="toast" role="status" aria-live="polite"><Icon name="check"/><span>{toast}</span><button aria-label="Tutup pemberitahuan" onClick={()=>setToast('')}><Icon name="close" size={14}/></button></div>}
-  {modal&&<Dialog title={modal==='command'?'Palet arahan':modal==='history'?'Sejarah pertanyaan':modal==='snippets'?'Petikan tersimpan':modal==='import'?'Bawa data anda masuk':modal==='generate'?'Jana ruang untuk bereksperimen':'Makmal berpandu'} onClose={()=>setModal(null)} wide={modal==='labs'}>
-   {modal==='command'&&<><div className="command-input"><Icon name="search" size={20}/><input autoFocus aria-label="Cari arahan" placeholder="Apa yang ingin anda lakukan?" value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>{if(e.key==='ArrowDown'){e.preventDefault();document.querySelector<HTMLButtonElement>('.command-list button')?.focus();}}}/><kbd>esc</kbd></div><div className="command-list" onKeyDown={e=>{if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();const buttons=[...e.currentTarget.querySelectorAll('button')],index=buttons.indexOf(document.activeElement as HTMLButtonElement);buttons[(index+(e.key==='ArrowDown'?1:-1)+buttons.length)%buttons.length]?.focus();}}}>{commands.filter(c=>c.label.toLowerCase().includes(search.toLowerCase())).map(c=><button key={c.label} onClick={c.action}><Icon name={c.icon}/><span>{c.label}</span><small>{c.hint}</small></button>)}{!commands.some(c=>c.label.toLowerCase().includes(search.toLowerCase()))&&<div className="small-empty">Tiada arahan sepadan.</div>}</div><div className="modal-foot">↑ ↓ untuk memilih <span>↵ untuk membuka</span></div></>}
-   {modal==='history'&&<div className="saved-list">{s.history.length?s.history.map((sql,i)=><button key={i} onClick={()=>{s.setSql(sql);setModal(null);setMobile('editor');}}><Icon name="clock"/><span><small>PERTANYAAN {s.history.length-i}</small><code>{sql}</code></span><Icon name="arrow"/></button>):<div className="panel-empty"><Icon name="clock" size={28}/><h3>Belum ada sejarah</h3><p>Pertanyaan yang berjaya akan muncul di sini sepanjang sesi ini.</p></div>}</div>}
-   {modal==='snippets'&&<div className="saved-list">{saved.length?saved.map(item=><div className="saved-item" key={item.id}><button onClick={()=>{s.setSql(item.sql);setModal(null);setMobile('editor');}}><Icon name="code"/><span><small>{new Date(item.created).toLocaleDateString('ms-MY')}</small><code>{item.title}</code></span><Icon name="arrow"/></button><button aria-label={`Padam petikan ${item.title}`} onClick={()=>void deleteSnippet(item.id).then(()=>snippets()).then(setSaved).catch(()=>notify('Petikan gagal dipadam.'))}><Icon name="close"/></button></div>):<div className="panel-empty"><Icon name="save" size={28}/><h3>Simpan idea seterusnya</h3><p>Tekan ikon simpan di editor. Petikan kekal dalam pelayar selepas halaman ditutup.</p></div>}</div>}
-   {modal==='import'&&<div className="import-form"><p>Baris pertama menjadi nama lajur. Jenis nilai dikesan secara automatik; nilai kosong menjadi NULL.</p><label className="file-drop"><Icon name="upload" size={26}/><strong>Pilih fail CSV</strong><span>atau tampal kandungannya di bawah</span><input aria-label="Fail CSV" type="file" accept=".csv,text/csv" onChange={e=>{const file=e.target.files?.[0];if(file)void file.text().then(setCsv).catch(()=>notify('Fail tidak dapat dibaca.'));}}/></label><label className="field-label" htmlFor="csv">KANDUNGAN CSV</label><textarea id="csv" aria-label="Kandungan CSV" placeholder={'nama,markah\nAina,90\nBala,85'} value={csv} onChange={e=>setCsv(e.target.value)} rows={6}/><div className="modal-actions"><span>Jadual baharu: import_csv_…</span><button className="primary-button" disabled={!csv.trim()||s.busy} onClick={async()=>{await s.importCsv(csv);if(!useStudio.getState().error){setModal(null);setCsv('');setMobile('hasil');notify('CSV berjaya diimport.');}else notify(useStudio.getState().error?.message??'Import gagal.');}}><Icon name="upload"/>Import data</button></div></div>}
-   {modal==='generate'&&<div className="generator-form"><p>Bina jadual <code>data_janaan</code> dengan ID unik, kategori, nilai dan status. Penjana ini mengganti jadual janaan terdahulu.</p><div className="generator-options">{[10000,100000,500000].map(n=><label key={n} className={count===n?'selected':''}><input type="radio" name="count" value={n} checked={count===n} onChange={()=>setCount(n)}/><strong>{n.toLocaleString('ms-MY')}</strong><span>baris</span></label>)}</div><div className="generator-note"><Icon name="database"/><span>Data dijana dalam Web Worker. Untuk melihat semua baris, buang LIMIT daripada pertanyaan selepas penjanaan.</span></div><button className="primary-button" disabled={s.busy} onClick={async()=>{setModal(null);await s.generate(count);setMobile('hasil');if(!useStudio.getState().error)notify(`${count.toLocaleString('ms-MY')} baris berjaya dijana.`);}}><Icon name="plus"/>Jana {count.toLocaleString('ms-MY')} baris</button></div>}
-   {modal==='labs'&&<Labs onClose={()=>setModal(null)}/>}
-  </Dialog>}
- </div>;
+import { useEffect, useRef, useState } from "react";
+import { useStudio } from "./state/studio";
+import { datasetNames, type Dataset } from "./engine/datasets";
+import { Editor } from "./components/Editor";
+import { Schema } from "./components/Schema";
+import { Results } from "./components/Results";
+import { Inspector, type InspectorTab } from "./components/Inspector";
+import { Icon, type IconName } from "./components/Icon";
+import { Dialog } from "./components/Dialog";
+import { Labs } from "./components/Labs";
+import {
+  snippets,
+  saveSnippet,
+  deleteSnippet,
+  type Snippet,
+} from "./state/persistence";
+type Modal =
+  "command" | "history" | "snippets" | "import" | "generate" | "labs" | null;
+type MobilePanel = "editor" | "hasil" | "pelan" | "pokok" | "skema";
+const mobileTabs: { id: MobilePanel; label: string; icon: IconName }[] = [
+  { id: "editor", label: "Editor", icon: "code" },
+  { id: "hasil", label: "Hasil", icon: "table" },
+  { id: "pelan", label: "Pelan", icon: "layers" },
+  { id: "pokok", label: "Pokok", icon: "tree" },
+  { id: "skema", label: "Skema", icon: "database" },
+];
+export default function App() {
+  const s = useStudio(),
+    [modal, setModal] = useState<Modal>(null),
+    [dense, setDense] = useState(false),
+    [inspector, setInspector] = useState<InspectorTab>("pelan"),
+    [mobile, setMobile] = useState<MobilePanel>("editor"),
+    [drawer, setDrawer] = useState(false),
+    [toast, setToast] = useState(""),
+    [saved, setSaved] = useState<Snippet[]>([]),
+    [search, setSearch] = useState(""),
+    [csv, setCsv] = useState(""),
+    [count, setCount] = useState(10000);
+  const touch = useRef<{ x: number; y: number } | null>(null),
+    toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function notify(message: string) {
+    setToast(message);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(""), 4200);
+  }
+  const run = async () => {
+    await useStudio.getState().run();
+    if (window.innerWidth < 768) setMobile("hasil");
+  };
+  useEffect(() => {
+    if (!useStudio.getState().ready && !useStudio.getState().busy)
+      void useStudio.getState().load("sekolah");
+  }, []);
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        if (!document.querySelector("dialog[open]")) {
+          void useStudio
+            .getState()
+            .run()
+            .then(() => {
+              if (window.innerWidth < 768) setMobile("hasil");
+            });
+        }
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setModal((m) => (m === "command" ? null : "command"));
+        setSearch("");
+      }
+      if (e.key === "Escape") setDrawer(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+  useEffect(() => {
+    if (modal === "snippets")
+      void snippets()
+        .then(setSaved)
+        .catch(() =>
+          notify("Petikan tidak dapat dibaca daripada storan setempat."),
+        );
+  }, [modal]);
+  useEffect(
+    () => () => {
+      if (toastTimer.current) clearTimeout(toastTimer.current);
+    },
+    [],
+  );
+  const choosePanel = (panel: MobilePanel) => {
+    setMobile(panel);
+    if (panel === "pelan" || panel === "pokok") setInspector(panel);
+  };
+  const commands = [
+    {
+      label: "Jalankan pertanyaan",
+      hint: "Ctrl ↵",
+      icon: "play" as IconName,
+      action: () => {
+        setModal(null);
+        void run();
+      },
+    },
+    {
+      label: "Pertanyaan baharu",
+      hint: "SQL",
+      icon: "plus" as IconName,
+      action: () => {
+        s.setSql("-- Tulis pertanyaan anda di sini\nSELECT ");
+        setModal(null);
+        setMobile("editor");
+      },
+    },
+    {
+      label: "Buka sejarah pertanyaan",
+      hint: "Sesi ini",
+      icon: "clock" as IconName,
+      action: () => setModal("history"),
+    },
+    {
+      label: "Petikan tersimpan",
+      hint: "Setempat",
+      icon: "save" as IconName,
+      action: () => setModal("snippets"),
+    },
+    {
+      label: "Import CSV",
+      hint: "Data anda",
+      icon: "upload" as IconName,
+      action: () => setModal("import"),
+    },
+    {
+      label: "Jana data ujian",
+      hint: "10k – 500k",
+      icon: "database" as IconName,
+      action: () => setModal("generate"),
+    },
+    {
+      label: "Makmal berpandu",
+      hint: "Belajar SQL",
+      icon: "book" as IconName,
+      action: () => setModal("labs"),
+    },
+    {
+      label: "Tukar kepadatan paparan",
+      hint: dense ? "Padat" : "Selesa",
+      icon: "settings" as IconName,
+      action: () => {
+        setDense(!dense);
+        setModal(null);
+      },
+    },
+  ];
+  return (
+    <div className={`app ${dense ? "density-compact" : ""}`}>
+      <header className="topbar">
+        <a href="#" className="brand" onClick={(e) => e.preventDefault()}>
+          <svg
+            className="brand-mark"
+            viewBox="0 0 32 32"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path d="M16 3 4 26h10L16 3Z" fill="#2EE6C5" />
+            <path d="m19 5 9 21H17L19 5Z" fill="#E8EDF5" />
+            <path d="M4 29h24" stroke="#2EE6C5" strokeWidth="1.5" />
+          </svg>
+          <span>VELA</span>
+          <span className="brand-divider" />
+          <span className="brand-subtitle">Studio Pangkalan Data</span>
+        </a>
+        <div className="topbar-right">
+          <span className="local-status">
+            <span className="live-dot" />
+            SETEMPAT
+          </span>
+          <button
+            className="command-trigger"
+            aria-label="Cari arahan… ⌘ K"
+            onClick={() => {
+              setModal("command");
+              setSearch("");
+            }}
+          >
+            <Icon name="search" size={14} />
+            <span>Cari arahan…</span>
+            <kbd>⌘ K</kbd>
+          </button>
+          <button
+            className="density-button icon-button"
+            aria-label="Tukar kepadatan"
+            aria-pressed={dense}
+            title="Tukar kepadatan"
+            onClick={() => setDense(!dense)}
+          >
+            <Icon name="settings" size={18} />
+          </button>
+          <span className="avatar" title="Ruang kerja setempat">
+            V
+          </span>
+        </div>
+      </header>
+      <div className="workspace-bar">
+        <div className="workspace-location">
+          <button
+            className="drawer-toggle icon-button"
+            aria-label="Buka skema"
+            aria-expanded={drawer}
+            onClick={() => setDrawer(!drawer)}
+          >
+            <Icon name="database" size={18} />
+          </button>
+          <span className="workspace-icon">
+            <Icon name="database" size={17} />
+          </span>
+          <label className="dataset-picker">
+            <span>SET DATA</span>
+            <select
+              aria-label="Set data"
+              disabled={s.busy}
+              value={s.dataset}
+              onChange={(e) => {
+                void s.load(e.target.value as Dataset);
+                notify(
+                  "Set data contoh dimuat semula. Data sesi terdahulu diganti.",
+                );
+              }}
+            >
+              {Object.entries(datasetNames).map(([value, name]) => (
+                <option key={value} value={value}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <span className="workspace-separator" />
+          <span className="workspace-description">
+            Teroka. Tanyakan. Fahami.
+          </span>
+        </div>
+        <div className="workspace-actions">
+          <button
+            className="text-button labs-trigger"
+            onClick={() => setModal("labs")}
+          >
+            <Icon name="book" />
+            Makmal berpandu
+            <Icon name="arrow" size={13} />
+          </button>
+          <button
+            className="primary-button run-button"
+            aria-label="Jalankan pertanyaan"
+            disabled={s.busy || !s.sql.trim()}
+            onClick={() => void run()}
+          >
+            <Icon name="play" size={14} />
+            <span>{s.busy ? "Menjalankan…" : "Jalankan"}</span>
+            <kbd>⌘ ↵</kbd>
+          </button>
+        </div>
+      </div>
+      <main
+        className={`workspace-grid mobile-${mobile} ${drawer ? "drawer-open" : ""}`}
+        onTouchStart={(e) => {
+          if (
+            (e.target as HTMLElement).closest(
+              ".table-scroll,.cm-editor,input,button,select",
+            )
+          )
+            return;
+          touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }}
+        onTouchEnd={(e) => {
+          if (!touch.current) return;
+          const dx = e.changedTouches[0].clientX - touch.current.x,
+            dy = e.changedTouches[0].clientY - touch.current.y;
+          touch.current = null;
+          if (
+            window.innerWidth < 768 &&
+            Math.abs(dx) > 70 &&
+            Math.abs(dx) > Math.abs(dy) * 2
+          ) {
+            const i = mobileTabs.findIndex((t) => t.id === mobile),
+              next = Math.max(0, Math.min(4, i + (dx < 0 ? 1 : -1)));
+            choosePanel(mobileTabs[next].id);
+          }
+        }}
+      >
+        {drawer && (
+          <button
+            className="drawer-scrim"
+            aria-label="Tutup skema"
+            onClick={() => setDrawer(false)}
+          />
+        )}
+        <aside className="schema-panel" aria-label="Penjelajah skema">
+          <Schema
+            onImport={() => setModal("import")}
+            onGenerate={() => setModal("generate")}
+            onSelect={() => {
+              setMobile("editor");
+              setDrawer(false);
+            }}
+          />
+        </aside>
+        <section className="editor-panel" aria-label="Ruang editor">
+          <div className="editor-tabs">
+            <div className="file-tab">
+              <Icon name="code" size={15} />
+              <span>pertanyaan_01.sql</span>
+              <span className="file-dot" />
+            </div>
+            <button
+              className="icon-button"
+              aria-label="Pertanyaan baharu"
+              title="Pertanyaan baharu"
+              onClick={() => {
+                s.setSql("-- Tulis pertanyaan anda di sini\nSELECT ");
+                notify(
+                  "Pertanyaan baharu dibuka. Hasil terdahulu masih boleh dilihat.",
+                );
+              }}
+            >
+              <Icon name="plus" size={17} />
+            </button>
+            <div className="editor-tools">
+              <button
+                className="icon-button"
+                aria-label="Sejarah pertanyaan"
+                title="Sejarah pertanyaan"
+                onClick={() => setModal("history")}
+              >
+                <Icon name="clock" size={16} />
+              </button>
+              <button
+                className="icon-button"
+                aria-label="Simpan petikan"
+                title="Simpan petikan"
+                disabled={!s.sql.trim()}
+                onClick={() =>
+                  void saveSnippet(s.sql)
+                    .then(() => notify("Petikan disimpan dalam pelayar ini."))
+                    .catch(() =>
+                      notify("Petikan gagal disimpan. Storan mungkin penuh."),
+                    )
+                }
+              >
+                <Icon name="save" size={16} />
+              </button>
+              <button
+                className="icon-button"
+                aria-label="Petikan tersimpan"
+                title="Petikan tersimpan"
+                onClick={() => setModal("snippets")}
+              >
+                <Icon name="book" size={16} />
+              </button>
+            </div>
+          </div>
+          <div className="editor-caption">
+            <span>PERTANYAAN</span>
+            <span>
+              SQL<span className="caption-dot">·</span>
+              <span>VELA</span>
+            </span>
+          </div>
+          <Editor />
+          <div className="editor-footer">
+            <span>
+              <Icon name="bolt" size={12} />
+              <kbd>Ctrl</kbd> + <kbd>Enter</kbd> untuk menjalankan
+            </span>
+            <span>
+              {s.sql.split("\n").length} baris <i /> UTF-8
+            </span>
+          </div>
+        </section>
+        <section className="results-panel" aria-label="Ruang hasil">
+          <Results dense={dense} toast={notify} />
+        </section>
+        <aside className="inspector-panel" aria-label="Pemeriksa">
+          <Inspector tab={inspector} setTab={setInspector} />
+        </aside>
+      </main>
+      <footer className="statusbar">
+        <div>
+          <span className="live-dot" />
+          <span>{s.busy ? "Enjin sedang bekerja" : "Web Worker aktif"}</span>
+          <span className="status-divider" />
+          <span>
+            Enjin VELA <b>v0.1.0</b>
+          </span>
+        </div>
+        <div>
+          <span>Data sesi dalam memori</span>
+          <span className="status-divider" />
+          <span>Dibina untuk memahami.</span>
+          <Icon name="code" size={13} />
+        </div>
+      </footer>
+      <nav className="mobile-nav" aria-label="Panel studio">
+        {mobileTabs.map((t) => (
+          <button
+            key={t.id}
+            aria-current={mobile === t.id ? "page" : undefined}
+            onClick={() => choosePanel(t.id)}
+          >
+            <Icon name={t.icon} size={19} />
+            <span>{t.label}</span>
+          </button>
+        ))}
+      </nav>
+      {toast && (
+        <div className="toast" role="status" aria-live="polite">
+          <Icon name="check" />
+          <span>{toast}</span>
+          <button aria-label="Tutup pemberitahuan" onClick={() => setToast("")}>
+            <Icon name="close" size={14} />
+          </button>
+        </div>
+      )}
+      {modal && (
+        <Dialog
+          title={
+            modal === "command"
+              ? "Palet arahan"
+              : modal === "history"
+                ? "Sejarah pertanyaan"
+                : modal === "snippets"
+                  ? "Petikan tersimpan"
+                  : modal === "import"
+                    ? "Bawa data anda masuk"
+                    : modal === "generate"
+                      ? "Jana ruang untuk bereksperimen"
+                      : "Makmal berpandu"
+          }
+          onClose={() => setModal(null)}
+          wide={modal === "labs"}
+        >
+          {modal === "command" && (
+            <>
+              <div className="command-input">
+                <Icon name="search" size={20} />
+                <input
+                  data-autofocus
+                  aria-label="Cari arahan"
+                  placeholder="Apa yang ingin anda lakukan?"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      document
+                        .querySelector<HTMLButtonElement>(
+                          ".command-list button",
+                        )
+                        ?.focus();
+                    }
+                  }}
+                />
+                <kbd>esc</kbd>
+              </div>
+              <div
+                className="command-list"
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                    e.preventDefault();
+                    const buttons = [
+                        ...e.currentTarget.querySelectorAll("button"),
+                      ],
+                      index = buttons.indexOf(
+                        document.activeElement as HTMLButtonElement,
+                      );
+                    buttons[
+                      (index +
+                        (e.key === "ArrowDown" ? 1 : -1) +
+                        buttons.length) %
+                        buttons.length
+                    ]?.focus();
+                  }
+                }}
+              >
+                {commands
+                  .filter((c) =>
+                    c.label.toLowerCase().includes(search.toLowerCase()),
+                  )
+                  .map((c) => (
+                    <button key={c.label} onClick={c.action}>
+                      <Icon name={c.icon} />
+                      <span>{c.label}</span>
+                      <small>{c.hint}</small>
+                    </button>
+                  ))}
+                {!commands.some((c) =>
+                  c.label.toLowerCase().includes(search.toLowerCase()),
+                ) && <div className="small-empty">Tiada arahan sepadan.</div>}
+              </div>
+              <div className="modal-foot">
+                ↑ ↓ untuk memilih <span>↵ untuk membuka</span>
+              </div>
+            </>
+          )}
+          {modal === "history" && (
+            <div className="saved-list">
+              {s.history.length ? (
+                s.history.map((sql, i) => (
+                  <button
+                    key={i}
+                    onClick={() => {
+                      s.setSql(sql);
+                      setModal(null);
+                      setMobile("editor");
+                    }}
+                  >
+                    <Icon name="clock" />
+                    <span>
+                      <small>PERTANYAAN {s.history.length - i}</small>
+                      <code>{sql}</code>
+                    </span>
+                    <Icon name="arrow" />
+                  </button>
+                ))
+              ) : (
+                <div className="panel-empty">
+                  <Icon name="clock" size={28} />
+                  <h3>Belum ada sejarah</h3>
+                  <p>
+                    Pertanyaan yang berjaya akan muncul di sini sepanjang sesi
+                    ini.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          {modal === "snippets" && (
+            <div className="saved-list">
+              {saved.length ? (
+                saved.map((item) => (
+                  <div className="saved-item" key={item.id}>
+                    <button
+                      onClick={() => {
+                        s.setSql(item.sql);
+                        setModal(null);
+                        setMobile("editor");
+                      }}
+                    >
+                      <Icon name="code" />
+                      <span>
+                        <small>
+                          {new Date(item.created).toLocaleDateString("ms-MY")}
+                        </small>
+                        <code>{item.title}</code>
+                      </span>
+                      <Icon name="arrow" />
+                    </button>
+                    <button
+                      aria-label={`Padam petikan ${item.title}`}
+                      onClick={() =>
+                        void deleteSnippet(item.id)
+                          .then(() => snippets())
+                          .then(setSaved)
+                          .catch(() => notify("Petikan gagal dipadam."))
+                      }
+                    >
+                      <Icon name="close" />
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div className="panel-empty">
+                  <Icon name="save" size={28} />
+                  <h3>Simpan idea seterusnya</h3>
+                  <p>
+                    Tekan ikon simpan di editor. Petikan kekal dalam pelayar
+                    selepas halaman ditutup.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          {modal === "import" && (
+            <div className="import-form">
+              <p>
+                Baris pertama menjadi nama lajur. Jenis nilai dikesan secara
+                automatik; nilai kosong menjadi NULL.
+              </p>
+              <label className="file-drop">
+                <Icon name="upload" size={26} />
+                <strong>Pilih fail CSV</strong>
+                <span>atau tampal kandungannya di bawah</span>
+                <input
+                  aria-label="Fail CSV"
+                  type="file"
+                  accept=".csv,text/csv"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file)
+                      void file
+                        .text()
+                        .then(setCsv)
+                        .catch(() => notify("Fail tidak dapat dibaca."));
+                  }}
+                />
+              </label>
+              <label className="field-label" htmlFor="csv">
+                KANDUNGAN CSV
+              </label>
+              <textarea
+                id="csv"
+                aria-label="Kandungan CSV"
+                placeholder={"nama,markah\nAina,90\nBala,85"}
+                value={csv}
+                onChange={(e) => setCsv(e.target.value)}
+                rows={6}
+              />
+              <div className="modal-actions">
+                <span>Jadual baharu: import_csv_…</span>
+                <button
+                  className="primary-button"
+                  disabled={!csv.trim() || s.busy}
+                  onClick={async () => {
+                    await s.importCsv(csv);
+                    if (!useStudio.getState().error) {
+                      setModal(null);
+                      setCsv("");
+                      setMobile("hasil");
+                      notify("CSV berjaya diimport.");
+                    } else
+                      notify(
+                        useStudio.getState().error?.message ?? "Import gagal.",
+                      );
+                  }}
+                >
+                  <Icon name="upload" />
+                  Import data
+                </button>
+              </div>
+            </div>
+          )}
+          {modal === "generate" && (
+            <div className="generator-form">
+              <p>
+                Bina jadual <code>data_janaan</code> dengan ID unik, kategori,
+                nilai dan status. Penjana ini mengganti jadual janaan terdahulu.
+              </p>
+              <div className="generator-options">
+                {[10000, 100000, 500000].map((n) => (
+                  <label key={n} className={count === n ? "selected" : ""}>
+                    <input
+                      type="radio"
+                      name="count"
+                      value={n}
+                      checked={count === n}
+                      onChange={() => setCount(n)}
+                    />
+                    <strong>{n.toLocaleString("ms-MY")}</strong>
+                    <span>baris</span>
+                  </label>
+                ))}
+              </div>
+              <div className="generator-note">
+                <Icon name="database" />
+                <span>
+                  Data dijana dalam Web Worker. Untuk melihat semua baris, buang
+                  LIMIT daripada pertanyaan selepas penjanaan.
+                </span>
+              </div>
+              <button
+                className="primary-button"
+                disabled={s.busy}
+                onClick={async () => {
+                  setModal(null);
+                  await s.generate(count);
+                  setMobile("hasil");
+                  if (!useStudio.getState().error)
+                    notify(
+                      `${count.toLocaleString("ms-MY")} baris berjaya dijana.`,
+                    );
+                }}
+              >
+                <Icon name="plus" />
+                Jana {count.toLocaleString("ms-MY")} baris
+              </button>
+            </div>
+          )}
+          {modal === "labs" && <Labs onClose={() => setModal(null)} />}
+        </Dialog>
+      )}
+    </div>
+  );
 }

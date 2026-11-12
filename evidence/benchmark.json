@@ -1,0 +1,372 @@
+{
+  "schemaVersion": 1,
+  "startedAt": "2026-11-12T07:07:42.760Z",
+  "finishedAt": "2026-11-12T07:08:04.236Z",
+  "command": "npm run benchmark",
+  "gitCommit": "0cb35fa3da1c2fbe39f5be30dc162df9bbdccc10",
+  "engineSha256AtStart": "d36bf25023f7b528c034ac5cc6fb2d21b9838863883c53d4ebf547ce0381d707",
+  "engineSha256AtEnd": "d36bf25023f7b528c034ac5cc6fb2d21b9838863883c53d4ebf547ce0381d707",
+  "sourceChangedDuringRun": false,
+  "hardware": {
+    "platform": "linux",
+    "release": "6.18.57",
+    "arch": "x64",
+    "cpuModel": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "visibleLogicalCpus": 3,
+    "availableParallelism": 2,
+    "hostMemoryGiB": 9.734611511230469,
+    "cgroupCpuMax": "200000 100000",
+    "cgroupMemoryMax": "8589934592",
+    "nodeVersion": "v24.22.1",
+    "v8Version": "13.6.233.17-node.58"
+  },
+  "fixture": {
+    "factRows": 100000,
+    "dimensionRows": 100,
+    "nullEveryNthValue": 13,
+    "deterministic": true,
+    "generationMs": 34.76565099999999
+  },
+  "load": {
+    "operation": "Database.restore: structured clone + uniqueness, type and foreign-key validation",
+    "warmups": 0,
+    "repetitions": 3,
+    "samplesMs": [
+      305.323915,
+      247.346154,
+      222.90976999999998
+    ],
+    "medianMs": 247.346154,
+    "p95Ms": 305.323915,
+    "excludes": "SQL INSERT parsing, row generation, persistence and Worker messaging"
+  },
+  "memory": {
+    "baseline": {
+      "rssMiB": 39.82421875,
+      "heapUsedMiB": 8.858787536621094,
+      "heapTotalMiB": 11.80078125,
+      "externalMiB": 2.874267578125
+    },
+    "generatedFixture": {
+      "rssMiB": 60.44921875,
+      "heapUsedMiB": 19.372047424316406,
+      "heapTotalMiB": 30.31640625,
+      "externalMiB": 2.7149953842163086
+    },
+    "restored": {
+      "rssMiB": 200.95703125,
+      "heapUsedMiB": 109.47615051269531,
+      "heapTotalMiB": 186.7421875,
+      "externalMiB": 2.652461051940918
+    },
+    "afterQueries": {
+      "rssMiB": 420.234375,
+      "heapUsedMiB": 282.98067474365234,
+      "heapTotalMiB": 360.32421875,
+      "externalMiB": 2.807514190673828
+    },
+    "note": "Process-wide snapshots; no forced garbage collection. Includes fixture and runtime. Not isolated database heap allocation."
+  },
+  "queries": [
+    {
+      "name": "Primary-key point predicate",
+      "sql": "SELECT id, dimension_id, value FROM fact WHERE id = 99999",
+      "warmups": 2,
+      "repetitions": 7,
+      "targetMs": 5,
+      "strategy": "Full table scan. PRIMARY KEY enforces uniqueness but has no physical index in P0.",
+      "targetMet": false,
+      "wallMedianMs": 162.08180600000014,
+      "wallP95Ms": 166.8875350000003,
+      "wallMinMs": 156.33096,
+      "wallMaxMs": 166.8875350000003,
+      "engineMedianMs": 161.85411299999987,
+      "samples": [
+        {
+          "wallMs": 162.85201899999993,
+          "engineMs": 162.71246100000008,
+          "rowsReturned": 1,
+          "rowsScanned": 100000
+        },
+        {
+          "wallMs": 160.84870899999987,
+          "engineMs": 160.61989199999994,
+          "rowsReturned": 1,
+          "rowsScanned": 100000
+        },
+        {
+          "wallMs": 166.05084699999998,
+          "engineMs": 165.79356900000016,
+          "rowsReturned": 1,
+          "rowsScanned": 100000
+        },
+        {
+          "wallMs": 156.33096,
+          "engineMs": 156.20165300000008,
+          "rowsReturned": 1,
+          "rowsScanned": 100000
+        },
+        {
+          "wallMs": 159.4934119999998,
+          "engineMs": 159.3549149999999,
+          "rowsReturned": 1,
+          "rowsScanned": 100000
+        },
+        {
+          "wallMs": 162.08180600000014,
+          "engineMs": 161.85411299999987,
+          "rowsReturned": 1,
+          "rowsScanned": 100000
+        },
+        {
+          "wallMs": 166.8875350000003,
+          "engineMs": 166.63303300000007,
+          "rowsReturned": 1,
+          "rowsScanned": 100000
+        }
+      ],
+      "trace": [
+        {
+          "id": 0,
+          "operator": "Imbasan jadual",
+          "detail": "fact · 100000 baris",
+          "rowsIn": 0,
+          "rowsOut": 100000,
+          "ms": 144.58712299992794,
+          "parent": 1
+        },
+        {
+          "id": 1,
+          "operator": "Tapis",
+          "detail": "id = 99999",
+          "rowsIn": 100000,
+          "rowsOut": 1,
+          "ms": 166.45948399999997,
+          "parent": 2
+        },
+        {
+          "id": 2,
+          "operator": "Unjuran",
+          "detail": "id, dimension_id, value",
+          "rowsIn": 1,
+          "rowsOut": 1,
+          "ms": 166.48511700000017
+        }
+      ]
+    },
+    {
+      "name": "Aggregate scan",
+      "sql": "SELECT COUNT(*), COUNT(value), SUM(value), AVG(value) FROM fact",
+      "warmups": 1,
+      "repetitions": 5,
+      "targetMs": 1000,
+      "strategy": "Full scan followed by a blocking aggregate operator; NULL values excluded from value aggregates.",
+      "targetMet": true,
+      "wallMedianMs": 224.05917200000022,
+      "wallP95Ms": 241.3618660000002,
+      "wallMinMs": 217.5128709999999,
+      "wallMaxMs": 241.3618660000002,
+      "engineMedianMs": 223.9619499999999,
+      "samples": [
+        {
+          "wallMs": 229.39526300000034,
+          "engineMs": 229.29314699999986,
+          "rowsReturned": 1,
+          "rowsScanned": 100000
+        },
+        {
+          "wallMs": 217.5128709999999,
+          "engineMs": 217.37759200000028,
+          "rowsReturned": 1,
+          "rowsScanned": 100000
+        },
+        {
+          "wallMs": 224.05917200000022,
+          "engineMs": 223.9619499999999,
+          "rowsReturned": 1,
+          "rowsScanned": 100000
+        },
+        {
+          "wallMs": 217.83342500000026,
+          "engineMs": 217.73552599999994,
+          "rowsReturned": 1,
+          "rowsScanned": 100000
+        },
+        {
+          "wallMs": 241.3618660000002,
+          "engineMs": 241.26002599999993,
+          "rowsReturned": 1,
+          "rowsScanned": 100000
+        }
+      ],
+      "trace": [
+        {
+          "id": 0,
+          "operator": "Imbasan jadual",
+          "detail": "fact · 100000 baris",
+          "rowsIn": 0,
+          "rowsOut": 100000,
+          "ms": 154.00713000001406,
+          "parent": 1
+        },
+        {
+          "id": 1,
+          "operator": "Agregat",
+          "detail": "Semua baris",
+          "rowsIn": 100000,
+          "rowsOut": 1,
+          "ms": 164.89554999999973,
+          "parent": 2
+        },
+        {
+          "id": 2,
+          "operator": "Unjuran",
+          "detail": "COUNT(*), COUNT(value), SUM(value), AVG(value)",
+          "rowsIn": 1,
+          "rowsOut": 1,
+          "ms": 241.07677300000023
+        }
+      ]
+    },
+    {
+      "name": "100k result materialization",
+      "sql": "SELECT id, dimension_id, value, label FROM fact",
+      "warmups": 1,
+      "repetitions": 3,
+      "targetMs": null,
+      "strategy": "Full scan and projection, materializing 100,000 result arrays. Excludes Worker transfer, DOM and browser rendering.",
+      "targetMet": null,
+      "wallMedianMs": 339.65335700000014,
+      "wallP95Ms": 372.2810100000006,
+      "wallMinMs": 328.0213910000002,
+      "wallMaxMs": 372.2810100000006,
+      "engineMedianMs": 339.56850699999995,
+      "samples": [
+        {
+          "wallMs": 328.0213910000002,
+          "engineMs": 327.8520550000003,
+          "rowsReturned": 100000,
+          "rowsScanned": 100000
+        },
+        {
+          "wallMs": 339.65335700000014,
+          "engineMs": 339.56850699999995,
+          "rowsReturned": 100000,
+          "rowsScanned": 100000
+        },
+        {
+          "wallMs": 372.2810100000006,
+          "engineMs": 372.17993099999967,
+          "rowsReturned": 100000,
+          "rowsScanned": 100000
+        }
+      ],
+      "trace": [
+        {
+          "id": 0,
+          "operator": "Imbasan jadual",
+          "detail": "fact · 100000 baris",
+          "rowsIn": 0,
+          "rowsOut": 100000,
+          "ms": 182.67713900021954,
+          "parent": 1
+        },
+        {
+          "id": 1,
+          "operator": "Unjuran",
+          "detail": "id, dimension_id, value, label",
+          "rowsIn": 100000,
+          "rowsOut": 100000,
+          "ms": 317.3462389999604
+        }
+      ]
+    },
+    {
+      "name": "100k × 100 two-table join",
+      "sql": "SELECT COUNT(*) FROM fact f INNER JOIN dimension d ON f.dimension_id = d.id",
+      "warmups": 1,
+      "repetitions": 3,
+      "targetMs": 1000,
+      "strategy": "Nested-loop join with 10,000,000 equality probes; no physical index or hash join in P0.",
+      "targetMet": false,
+      "wallMedianMs": 4180.547685000001,
+      "wallP95Ms": 4444.873153000002,
+      "wallMinMs": 3753.3547510000008,
+      "wallMaxMs": 4444.873153000002,
+      "engineMedianMs": 4180.422893999999,
+      "samples": [
+        {
+          "wallMs": 3753.3547510000008,
+          "engineMs": 3753.213174999999,
+          "rowsReturned": 1,
+          "rowsScanned": 100100
+        },
+        {
+          "wallMs": 4444.873153000002,
+          "engineMs": 4444.776522,
+          "rowsReturned": 1,
+          "rowsScanned": 100100
+        },
+        {
+          "wallMs": 4180.547685000001,
+          "engineMs": 4180.422893999999,
+          "rowsReturned": 1,
+          "rowsScanned": 100100
+        }
+      ],
+      "trace": [
+        {
+          "id": 0,
+          "operator": "Imbasan jadual",
+          "detail": "fact · 100000 baris",
+          "rowsIn": 0,
+          "rowsOut": 100000,
+          "ms": 161.55041499958315,
+          "parent": 2
+        },
+        {
+          "id": 1,
+          "operator": "Imbasan jadual",
+          "detail": "dimension · 100 baris",
+          "rowsIn": 0,
+          "rowsOut": 100,
+          "ms": 0.06996000001890934,
+          "parent": 2
+        },
+        {
+          "id": 2,
+          "operator": "Cantuman gelung",
+          "detail": "INNER · dimension",
+          "rowsIn": 100100,
+          "rowsOut": 100000,
+          "ms": 4157.62248699928,
+          "parent": 3
+        },
+        {
+          "id": 3,
+          "operator": "Agregat",
+          "detail": "Semua baris",
+          "rowsIn": 100000,
+          "rowsOut": 1,
+          "ms": 4180.274943,
+          "parent": 4
+        },
+        {
+          "id": 4,
+          "operator": "Unjuran",
+          "detail": "COUNT(*)",
+          "rowsIn": 1,
+          "rowsOut": 1,
+          "ms": 4180.309656999998
+        }
+      ]
+    }
+  ],
+  "caveats": [
+    "Measured in Node.js on a shared Linux execution environment, not an end-user browser. Concurrent development/test work may affect timings.",
+    "Wall timings include SQL parse, planning/binding, execution and result materialization; exclude assertion checks, Worker transfer and rendering.",
+    "P0 has no B+tree, fixed-size pages, statistics-driven optimizer or indexed joins. Indexed lookup/join targets are not implemented; measured equivalents use full scans and nested loops.",
+    "p95 uses the nearest-rank sample percentile. Three-sample p95 is the maximum sample, not a production latency estimate.",
+    "Operator times are inclusive downstream pull time and must not be summed as exclusive CPU time."
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "command": "npm run curated",
+  "total": 100,
+  "passed": 100,
+  "failed": 0,
+  "matchRate": 1,
+  "comparison": "Both SQLite and VELA results must match the hand-written expected rows exactly; column labels are excluded.",
+  "failures": []
+}

@@ -1,0 +1,4 @@
+PASS: entrypoint byte tampering rejected
+PASS: missing vendor license rejected by both checks
+PASS: license byte tampering rejected
+3/3 negative verification probes passed in an isolated temporary copy; workspace sources unchanged.

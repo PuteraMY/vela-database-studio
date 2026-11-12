@@ -1,12 +1,130 @@
-import {useState} from 'react';
-import {useStudio} from '../state/studio';
-import {Icon} from './Icon';
-const lessons=[
- {title:'Kenali data anda',topic:'SELECT · WHERE · ORDER BY',description:'Paparkan nama tiga pelajar pertama, disusun mengikut id.',sql:'SELECT nama FROM pelajar\nWHERE id <= 3\nORDER BY id;',expected:[['Aina Sofea'],['Muhammad Danish'],['Tan Mei Xin']]},
- {title:'Hubungkan dua jadual',topic:'INNER JOIN',description:'Dapatkan nama kursus dan pensyarah untuk kursus pertama.',sql:'SELECT k.nama, p.nama\nFROM kursus k\nJOIN pensyarah p ON k.pensyarah_id = p.id\nWHERE k.id = 1;',expected:[['Pangkalan Data','Dr. Nur Aisyah']]},
- {title:'Lihat kesan indeks',topic:'INDEKS · P1',description:'Memerlukan B+tree dan pengoptimum fizikal.'},
- {title:'Cari cerita dalam angka',topic:'GROUP BY · COUNT',description:'Kira pendaftaran untuk setiap kursus, disusun mengikut kursus_id.',sql:'SELECT kursus_id, COUNT(*) AS jumlah\nFROM pendaftaran\nGROUP BY kursus_id\nORDER BY kursus_id;',expected:Array.from({length:8},(_,i)=>[i+1,30])},
- {title:'Perubahan yang selamat',topic:'TRANSAKSI · P2',description:'Memerlukan COMMIT, ROLLBACK dan pengasingan sesi.'},
- {title:'Melangkaui agregat',topic:'FUNGSI TETINGKAP · P3',description:'Memerlukan ROW_NUMBER dan OVER.'}
+import { useState } from "react";
+import { useStudio } from "../state/studio";
+import { Icon } from "./Icon";
+const lessons = [
+  {
+    title: "Kenali data anda",
+    topic: "SELECT · WHERE · ORDER BY",
+    description: "Paparkan nama tiga pelajar pertama, disusun mengikut id.",
+    sql: "SELECT nama FROM pelajar\nWHERE id <= 3\nORDER BY id;",
+    expected: [["Aina Sofea"], ["Muhammad Danish"], ["Tan Mei Xin"]],
+  },
+  {
+    title: "Hubungkan dua jadual",
+    topic: "INNER JOIN",
+    description: "Dapatkan nama kursus dan pensyarah untuk kursus pertama.",
+    sql: "SELECT k.nama, p.nama\nFROM kursus k\nJOIN pensyarah p ON k.pensyarah_id = p.id\nWHERE k.id = 1;",
+    expected: [["Pangkalan Data", "Dr. Nur Aisyah"]],
+  },
+  {
+    title: "Lihat kesan indeks",
+    topic: "INDEKS · P1",
+    description: "Memerlukan B+tree dan pengoptimum fizikal.",
+  },
+  {
+    title: "Cari cerita dalam angka",
+    topic: "GROUP BY · COUNT",
+    description:
+      "Kira pendaftaran untuk setiap kursus, disusun mengikut kursus_id.",
+    sql: "SELECT kursus_id, COUNT(*) AS jumlah\nFROM pendaftaran\nGROUP BY kursus_id\nORDER BY kursus_id;",
+    expected: Array.from({ length: 8 }, (_, i) => [i + 1, 30]),
+  },
+  {
+    title: "Perubahan yang selamat",
+    topic: "TRANSAKSI · P2",
+    description: "Memerlukan COMMIT, ROLLBACK dan pengasingan sesi.",
+  },
+  {
+    title: "Melangkaui agregat",
+    topic: "FUNGSI TETINGKAP · P3",
+    description: "Memerlukan ROW_NUMBER dan OVER.",
+  },
 ];
-export function Labs({onClose}:{onClose:()=>void}){const [selected,setSelected]=useState(0),[status,setStatus]=useState<'pass'|'fail'|null>(null),s=useStudio();const lesson=lessons[selected];return <div className="labs"><div className="lab-list">{lessons.map((l,i)=><button className={selected===i?'selected':''} key={l.title} onClick={()=>{setSelected(i);setStatus(null);}}><span className="lab-number">0{i+1}</span><span><strong>{l.title}</strong><small>{l.topic}</small></span>{l.sql&&<Icon name="chevron" size={14}/>}</button>)}</div><div className="lab-detail"><span className="eyebrow">MAKMAL {String(selected+1).padStart(2,'0')} / 06</span><h3>{lesson.title}</h3><p>{lesson.description}</p>{lesson.sql?<><pre>{lesson.sql}</pre><p className="hint">Makmal ini menggunakan set data Sekolah. Memulakan makmal akan memuatkan semula data contoh.</p><button className="primary-button" disabled={s.busy} onClick={async()=>{await s.load('sekolah');s.setSql(lesson.sql??'');onClose();}}><Icon name="code"/>Buka dalam editor</button><button className="secondary-button" disabled={s.busy||!s.results.length} onClick={()=>{setStatus(JSON.stringify(s.results.at(-1)?.rows)===JSON.stringify(lesson.expected)?'pass':'fail');}}>Semak hasil semasa</button>{status&&<p role="status" className={status==='pass'?'lab-pass':'lab-fail'}>{status==='pass'?'Lulus — hasil anda tepat.':'Gagal — jalankan pertanyaan dan semak semula hasil.'}</p>}</>:<div className="unavailable-lab"><Icon name="layers"/><span>Belum tersedia dalam P0. Tiada keputusan ujian disimulasikan.</span></div>}</div></div>;}
+export function Labs({ onClose }: { onClose: () => void }) {
+  const [selected, setSelected] = useState(0),
+    [status, setStatus] = useState<"pass" | "fail" | null>(null),
+    s = useStudio();
+  const lesson = lessons[selected];
+  return (
+    <div className="labs">
+      <div className="lab-list">
+        {lessons.map((l, i) => (
+          <button
+            className={selected === i ? "selected" : ""}
+            key={l.title}
+            onClick={() => {
+              setSelected(i);
+              setStatus(null);
+            }}
+          >
+            <span className="lab-number">0{i + 1}</span>
+            <span>
+              <strong>{l.title}</strong>
+              <small>{l.topic}</small>
+            </span>
+            {l.sql && <Icon name="chevron" size={14} />}
+          </button>
+        ))}
+      </div>
+      <div className="lab-detail">
+        <span className="eyebrow">
+          MAKMAL {String(selected + 1).padStart(2, "0")} / 06
+        </span>
+        <h3>{lesson.title}</h3>
+        <p>{lesson.description}</p>
+        {lesson.sql ? (
+          <>
+            <pre>{lesson.sql}</pre>
+            <p className="hint">
+              Makmal ini menggunakan set data Sekolah. Memulakan makmal akan
+              memuatkan semula data contoh.
+            </p>
+            <button
+              className="primary-button"
+              disabled={s.busy}
+              onClick={async () => {
+                await s.load("sekolah");
+                s.setSql(lesson.sql ?? "");
+                onClose();
+              }}
+            >
+              <Icon name="code" />
+              Buka dalam editor
+            </button>
+            <button
+              className="secondary-button"
+              disabled={s.busy || !s.results.length}
+              onClick={() => {
+                setStatus(
+                  JSON.stringify(s.results.at(-1)?.rows) ===
+                    JSON.stringify(lesson.expected)
+                    ? "pass"
+                    : "fail",
+                );
+              }}
+            >
+              Semak hasil semasa
+            </button>
+            {status && (
+              <p
+                role="status"
+                className={status === "pass" ? "lab-pass" : "lab-fail"}
+              >
+                {status === "pass"
+                  ? "Lulus — hasil anda tepat."
+                  : "Gagal — jalankan pertanyaan dan semak semula hasil."}
+              </p>
+            )}
+          </>
+        ) : (
+          <div className="unavailable-lab">
+            <Icon name="layers" />
+            <span>
+              Belum tersedia dalam P0. Tiada keputusan ujian disimulasikan.
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
