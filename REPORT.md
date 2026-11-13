@@ -1,8 +1,18 @@
 # VELA delivery and skills integration report
 
-Verified on 2026-11-12. **P0 and P1A are verified; P1B-1 now connects explicit SQL indexes to atomic B+tree maintenance. SELECT index access/optimization, P2 and P3 remain unimplemented. The full original project is not finished.**
+Verification finalized on 2026-11-13. **P0, P1A and P1B-1 are verified; P1B-2A now provides internal B+tree reads and stable-ID resolution. SELECT index access/optimization, P2 and P3 remain unimplemented. The full original project is not finished.**
 
-## P1B-1 index maintenance checkpoint
+## P1B-2A internal read checkpoint
+
+`IndexReadPath` resolves P1B-1 IDs through per-table directories and performs exact/range reads through real B+trees. Frozen table/index handles enforce database ownership and object lifetimes. Ordinary UPDATE retains references; deleted rows fail resolution; DROP/recreation and logical restore invalidate old handles. Every returned index entry is checked against the current row. Cursors stream in both directions, support inclusive/exclusive lexicographic bounds and release their physical iterator on completion, cancellation or error. Any successful publication invalidates open cursors; failed statements preserve them.
+
+Local core gates pass: skills integrity, typecheck, lint, **511/511 unit tests (68 new)** and build. New tests include 900 deterministic reference-model steps, no-scan instrumentation, cleanup assertions and ten targeted SQL/SQLite comparisons. The interrupted session had also completed 62/62 production-browser tests; those valid results and the core gate were preserved without rerunning. Resumed curated checks matched 100/100 and fuzz matched 5000/5000 (seed 355866). Internal 100k-row medians were 0.072104 ms for exact lookup plus four-row resolution and 0.115886 ms for a 40-row range. These are internal measurements, not SELECT speedups. Full evidence, hardware and methodology are in TESTING.md, PROGRESS.md and BENCHMARK.md. This milestone used no subagents, new dependencies or skill loads; project-local skills remain unchanged and integrity-checked.
+
+Limits: memory only; read handles stay within one Database instance and cannot be durable/Worker-protocol references. Directory rebuilding adds O(total rows) publication work and O(total rows) memory; individual resolution does not scan. Exact keys require full arity and must fit current slots; partial range bounds are ordinary lexicographic keys, not wildcard prefixes. Raw NULL lookup is not SQL equality. There is no snapshot isolation, SELECT index operator, optimizer or UI change.
+
+Branch `feat/vela-p1b2a-index-read-path` starts at verified `77bfc1b264392cd5320ca5a52e413972570a2d6f` and targets `feat/vela-p1b1-index-maintenance` in a separate stacked PR. Preserve PR #1/#2; no merge or deployment. P1B-2B should start with a single-table equality index operator and differential SQL binding/residual/fallback tests. Work stops at P1B-2A.
+
+## P1B-1 index maintenance checkpoint (historical)
 
 Stable internal row IDs survive ordinary INSERT/UPDATE/DELETE without array-position dependence. SQL key normalization matches P0 strict types, BOOLEAN 0/1 and case-sensitive UTF-16 ordering; duplicate keys and NULL-containing UNIQUE keys retain supported behavior. CREATE INDEX populates real trees, DROP removes them, and candidate row/catalog/identity/tree publication is atomic across all indexes. Diagnostics verify every entry and reference plus P1A invariants.
 
@@ -53,7 +63,7 @@ This continuation corrected virtual-spacer paint/layout shifts, graph clipping, 
 
 | Executed command/check | Result |
 | --- | --- |
-| `npm run verify` | Skill integrity, strict typecheck, lint, 443/443 unit tests and production build passed; no emitted warnings/errors. |
+| `npm run verify` | Skill integrity, strict typecheck, lint, 511/511 unit tests and production build passed; no emitted warnings/errors. |
 | `npm run test:production` | 62/62 actual-browser tests passed on desktop/mobile; zero skipped/flaky/unexpected tests. |
 | `npm run curated` | 100/100 hand-written expected result sets verified in VELA and SQLite. |
 | `npm run fuzz` | 5,000/5,000 matched (100%), seed 355866, 25 randomized schemas, 20 P0 query categories. |
@@ -92,18 +102,18 @@ Playwright tests, security changes, UI implementation and final documents were r
 
 ## Limitations and next ordered milestone
 
-- **P1 incomplete:** P1A pages/B+tree and P1B-1 SQL index maintenance are implemented; SQL index access, page-read reporting in the studio, statistics/ANALYZE, optimizer transformations/costing, join selection/reordering, estimated EXPLAIN and the tree visualizer remain absent. `EXPLAIN ANALYZE` only exposes actual P0 operators with inclusive times.
+- **P1 incomplete:** P1A pages/B+tree, P1B-1 maintenance and P1B-2A internal reads are implemented; SELECT index access, page-read reporting in the studio, statistics/ANALYZE, optimizer transformations/costing, join selection/reordering, estimated EXPLAIN and the tree visualizer remain absent. `EXPLAIN ANALYZE` only exposes actual P0 operators with inclusive times.
 - **P2 absent:** BEGIN/COMMIT/ROLLBACK/SAVEPOINT, WAL, recovery, MVCC sessions, durable database IndexedDB storage and checkpointing. Reloading loses database changes; only snippets persist.
 - **P3 absent:** scalar/IN/EXISTS/correlated subqueries, CTEs/recursive CTEs, UNION/INTERSECT/EXCEPT and windows. Three of six guided lessons await these tiers.
 - Results are fully materialized/transferred despite bounded DOM rendering. Mutations clone/validate the database. Large joins/CSV/SQL inputs have no general resource governor or cancel control; large workloads can consume memory/Worker time.
 - Strict storage types and IEEE-754 numbers differ from SQLite affinity/64-bit integers. Date functions implement a documented small UTC subset. Arbitrary SQL compatibility is not promised by the 100% sampled match rate.
 - Only Chromium was exercised. Field performance, real-device behavior, full assistive-technology review and hosted security-header delivery are not verified.
 
-This checkpoint stops at P1B-1. P1B-2 requires a new instruction; P2 and P3 remain ordered after a built, tested and committed P1. SELECT behavior stays at P0.
+This checkpoint stops at P1B-2A. P1B-2B requires a new instruction; P2 and P3 remain ordered after a built, tested and committed P1. SELECT behavior stays at P0.
 
 ## Release assessment
 
-This is a tested educational P0 SQL studio with verified P1A storage, P1B-1 index maintenance and reproducible evidence. It is not a completed transactional database or a durable production datastore. The requested eight-name source review is complete, with one original vendor folder verified and seven legacy guides awaiting upstream replacements; native automatic catalog registration is unverified. The full original “done when” bar is not met because later tiers and indexed targets are absent.
+This is a tested educational P0 SQL studio with verified P1A storage, P1B-1 maintenance, P1B-2A internal reads and reproducible evidence. It is not a completed transactional database or a durable production datastore. The requested eight-name source review is complete, with one original vendor folder verified and seven legacy guides awaiting upstream replacements; native automatic catalog registration is unverified. The full original “done when” bar is not met because later tiers and indexed targets are absent.
 
 The static build is ready for an approved preview deployment, subject to the explicit P0 limits above. After the user created [PuteraMY/vela-database-studio](https://github.com/PuteraMY/vela-database-studio), the project was published to its main branch. The initial remote commit and owner's MIT license were preserved in merge commit `9b58b91`, along with the full local development history. No unrelated project or shared skills repository was modified. No production site deployment occurred. npm/Chromium/skill access succeeded; omitted engine tiers are scope limits rather than installation failures.
 

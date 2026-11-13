@@ -1,5 +1,12 @@
 import { parse } from "./parser";
 import {
+  IndexReadPath,
+  type IndexHandle,
+  type RowReference,
+  type TableHandle,
+} from "./index-reader";
+import type { RangeOptions } from "./storage/cursor";
+import {
   allocateRowId,
   maintainIndexes,
   restoreIdentities,
@@ -34,6 +41,7 @@ import {
   type Source,
   type Statement,
   type Table,
+  type Value,
 } from "./types";
 const qualified = (row: Row, alias: string): Row =>
   Object.fromEntries(Object.entries(row).map(([k, v]) => [`${alias}.${k}`, v]));
@@ -41,6 +49,7 @@ export class Database {
   private state: DatabaseState = { tables: [], indexes: [] };
   private identities: RowIdentities = new Map();
   private indexes: PhysicalIndexes = new Map();
+  private readonly reads = new IndexReadPath();
   private readonly indexStorage?: TreeOptions;
   /** Optional fixed page limits support bounded hosts and deterministic failure tests. */
   constructor(options: { indexStorage?: TreeOptions } = {}) {
@@ -63,9 +72,11 @@ export class Database {
       new Map(),
       this.indexStorage,
     );
+    const readState = this.reads.prepare(copy, identities, indexes, true);
     this.state = copy;
     this.identities = identities;
     this.indexes = indexes;
+    this.reads.publish(readState);
   }
   schema(): SchemaTable[] {
     return structuredClone(
@@ -92,7 +103,28 @@ export class Database {
     return tree.exportImage();
   }
   validateIndexes() {
-    return validateIndexes(this.state, this.identities, this.indexes);
+    const result = validateIndexes(this.state, this.identities, this.indexes);
+    this.reads.validate(this.state, this.identities, this.indexes);
+    return result;
+  }
+  /** Internal read APIs only; SELECT continues through the P0 executor. */
+  tableHandle(name: string) {
+    return this.reads.tableHandle(name);
+  }
+  indexHandle(table: TableHandle, name: string) {
+    return this.reads.indexHandle(table, name);
+  }
+  resolveRow(reference: RowReference) {
+    return this.reads.resolveRow(reference);
+  }
+  resolveRows(table: TableHandle, references: readonly RowReference[]) {
+    return this.reads.resolveRows(table, references);
+  }
+  lookupIndex(index: IndexHandle, key: readonly Value[]) {
+    return this.reads.lookupIndex(index, key);
+  }
+  scanIndex(index: IndexHandle, options: RangeOptions = {}) {
+    return this.reads.scanIndex(index, options);
   }
   private identity(name: string, identities = this.identities): TableIdentity {
     const identity = identities.get(name);
@@ -356,9 +388,11 @@ export class Database {
       this.indexes,
       this.indexStorage,
     );
+    const readState = this.reads.prepare(state, identities, indexes);
     this.state = state;
     this.identities = identities;
     this.indexes = indexes;
+    this.reads.publish(readState);
     return {
       columns: [],
       rows: [],
