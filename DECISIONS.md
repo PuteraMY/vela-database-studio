@@ -1,5 +1,14 @@
 # Decisions
 
+## P1C-2A bounded access planning
+
+- Verified local/remote P1C-1 `8805cacd2ee207540c09a212cb3f770a251864e3` and open PR #5 before branching. The new request supersedes the former stop rule. Work alone; preserve PRs #1–#5. No shared skills/service/dependency changes, merge/deployment or P1C-2B work.
+- Keep semantic equality eligibility unchanged. After eligibility, retain UNIQUE indexes and established paths on tables below 1,024 rows. This deliberately restricts the new heuristic to larger tables, without claiming the threshold is an optimal crossover.
+- For a non-unique single-column index, literal LIMIT 1 and absent/literal-zero OFFSET, with no DISTINCT/ORDER BY/GROUP BY/HAVING/aggregate, inspect at most the first eight current indexed-column values using the existing SQL comparator. Choose scan only when an actual match is found there. Otherwise retain the streaming index. No arbitrary predicate is sampled: eligibility already proved the entire WHERE equality and physical key semantics compatible. The original WHERE is still executed.
+- Eight is a fixed work budget, not a selectivity estimate. A positive probe supplies a proven upper bound on executor rows needed (1–8), subject to the existing synchronous statement model. A negative probe never implies absence or global cardinality. Missing/selective keys retain index access; no full scan, B+tree match enumeration, per-key count, histogram or persistent statistics is used for planning. Larger LIMIT/OFFSET, expression limits and blocking operators retain established paths.
+- `access.planning` reports reason/detail, exact table row count, actual prefix reads and, only on a positive probe, the scan-row upper bound. Source rows/timing remain executor-only; total query time includes planning. Trace detail exposes the concise Malay reason through existing plan/EXPLAIN ANALYZE infrastructure. These are observed work bounds, not estimated time/cost or total key cardinality.
+- Prefix reads are repeated during scan execution (at most eight additional scalar reads); late/absent-key probes can add overhead and early matches outside the budget may be missed. No claim that every selected path is fastest. The benchmark reuses the existing harness with `--planner`, comparing exact P1C-1/current/forced-scan SQL on identical 100k fixtures with explicit unique/non-unique indexes. P1C-2B should validate/calibrate or extend this bounded policy only after new authorization.
+
 ## P1C-1 streaming equality execution
 
 - Verified local/remote P1B-2B commit `f39ff56d8961ac556e953ecf80cff328c5721cd7` and open PR #4 targeting P1B-2A before creating `feat/vela-p1c1-streaming-index`. The new request supersedes the prior stop rule. Work alone; preserve PRs #1–#4, storage/DML/read algorithms, SQL eligibility, Worker protocol, UI and dependencies. Target P1B-2B; no merge/deployment or P1C-2 work.

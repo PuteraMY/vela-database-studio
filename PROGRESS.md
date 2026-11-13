@@ -1,6 +1,6 @@
 # Progress
 
-Current milestone: P1C-1 streaming indexed equality on `feat/vela-p1c1-streaming-index`, based on verified P1B-2B commit `f39ff56d8961ac556e953ecf80cff328c5721cd7`. Implementation and all local release gates are complete. The stacked PR targets P1B-2B; preserve PRs #1–#4 and main.
+Current milestone: P1C-2A conservative access planning on `feat/vela-p1c2a-cost-aware-planner`, based on verified P1C-1 `8805cacd2ee207540c09a212cb3f770a251864e3`. Implementation and local verification are complete. Target P1C-1; preserve PRs #1–#5/main.
 
 | Tier | Status | Verified boundary |
 | --- | --- | --- |
@@ -10,11 +10,19 @@ Current milestone: P1C-1 streaming indexed equality on `feat/vela-p1c1-streaming
 | P1B-2A — internal index reads | Implemented and locally verified | Lifetime-scoped handles, stable-ID directory resolution, actual B+tree exact/range reads and fail-fast cursors. |
 | P1B-2B — safe indexed SELECT | Implemented and locally verified | Single-column equality, original predicate, deterministic selection, truthful trace and P0 fallback. |
 | P1C-1 — streaming equality | Implemented and locally verified | Existing exact cursor, downstream LIMIT/OFFSET, accurate consumed-entry trace and recursive cleanup. |
+| P1C-2A — bounded access planning | Implemented and locally verified | Positive bounded-prefix evidence may select early scan; all other eligible queries retain streaming indexes. |
 | Remaining P1 | Not started | No optimizer/statistics, estimated EXPLAIN, indexed joins or tree visualizer. |
 | P2 — transactions, WAL, MVCC | Not started | Snippet IndexedDB storage is not database persistence. Transaction commands are rejected. |
 | P3 — advanced SQL | Not started | No subqueries, CTEs, set operations or windows. Fuzz/benchmark tooling is available for P0. |
 
-## P1C-1 verified checkpoint
+## P1C-2A verified checkpoint
+
+- One bounded-work decision after unchanged eligibility: for large non-unique equality LIMIT 1, choose scan only after a match is observed in at most eight initial values; otherwise retain streaming. No global selectivity estimate/full scan for planning. Trace explains decisions and separates prefix reads from executor rows.
+- `npm run verify` passed skills/typecheck/lint, **682/682** units (24 new), build. Focused 165/165 preceded the last text case. Production **66/66**, curated **100/100**, fuzz **5000/5000** passed, zero final skips/flaky cases. All original streaming tests and 1,000 seeded SQL comparisons remain passing. One initial test-only union property type error was corrected before final gates.
+- `npm run benchmark:planner` passed contemporaneous predecessor/planned/scan assertions. 100k duplicate LIMIT 1 median (P1C-1 / planned / forced scan): **0.497 / 0.252 / 0.228 ms**. All control scenarios and variability are retained in BENCHMARK.md / `evidence/p1c2a-verification.json`. Scoped planner benchmark executed; unrelated legacy benchmark modes were not rerun.
+- Work alone; unchanged dependencies, SQL eligibility/parser/evaluator, cursor/storage/DML/Worker/UI. Branch targets P1C-1; preserve PRs #1–#5/main. No merge/deploy/P1C-2B/P2/P3. Remote CI is recorded separately with the PR.
+
+## P1C-1 verified checkpoint (historical)
 
 - Streams the existing exact cursor through original WHERE/downstream operators. LIMIT/OFFSET and DISTINCT control demand; blocking operators consume required input. Recursive cleanup prevents cursor leaks and unsafe operator reuse.
 - Skills/typecheck/lint/build passed; **658/658** units (36 new), **66/66** production browser, **100/100** curated and **5000/5000** fuzz passed. Existing 1,000 seeded SQL comparisons remain active. No skipped/flaky final tests.

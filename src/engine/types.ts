@@ -118,9 +118,28 @@ export type ScanReason =
   | "null-or-nonfinite"
   | "incompatible-type"
   | "no-compatible-index"
-  | "key-capacity";
+  | "key-capacity"
+  | "bounded-prefix-match";
+export interface AccessPlanning {
+  reason:
+    | "unique-index"
+    | "retain-small-table"
+    | "retain-query-shape"
+    | "prefix-miss"
+    | "prefix-match";
+  detail: string;
+  tableRows: number;
+  /** Actual planning reads, not a cardinality estimate or executor row count. */
+  prefixRowsRead: number;
+  scanRowsUpperBound?: number;
+}
 export type AccessTrace =
-  | { kind: "table-scan"; table: string; reason: ScanReason }
+  | {
+      kind: "table-scan";
+      table: string;
+      reason: ScanReason;
+      planning?: AccessPlanning;
+    }
   | {
       kind: "index-equality";
       table: string;
@@ -129,6 +148,7 @@ export type AccessTrace =
       lookupCalls: number;
       /** Validated entries actually pulled, not total matching cardinality. */
       matchedRowIds: number;
+      planning?: AccessPlanning;
     };
 export interface Trace {
   id: number;

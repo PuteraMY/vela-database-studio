@@ -1,6 +1,29 @@
 # Measured performance
 
-## P1C-1 streaming SQL measurements (2026-11-13)
+## P1C-2A bounded planner (2026-11-13)
+
+`npm run benchmark:planner` reuses the existing harness and extracts exact P1C-1 commit `8805cacd2ee207540c09a212cb3f770a251864e3` from local git. Same-process predecessor indexed/current planned/forced-scan SQL uses identical 100k rows, explicit UNIQUE id and non-unique k indexes. Data: id=i+1, k=i%10, v=floor(i/10)%5. Two warmups and nine measured runs per mode/workload, rotating order. Complete results and actual selected source are asserted outside timing. Includes parsing, binding, planning/probes, access, filtering, projection/downstream and result materialization; excludes setup/index construction, assertions, Worker transfer and DOM. No concurrent build/browser suite. Engine hashes stayed unchanged.
+
+Linux 6.18.57 x64, Intel Xeon Platinum 8573C, Node 24.22.1; three visible CPUs, two-core quota/parallelism, 8 GiB memory limit. Warmed shared-host measurements are not field guarantees. Nine-sample nearest-rank p95 equals max. [Evidence](evidence/p1c2a-verification.json) retains all samples and traces; full raw artifact is `artifacts/p1c2a-planner-benchmark.json`. The harness's `streaming` field denotes current planned execution, which can now select a scan.
+
+| 100k workload | P1C-1 median / p95 ms | Planned median / p95 ms | Scan median / p95 ms |
+| --- | ---: | ---: | ---: |
+| duplicate LIMIT 1 | 0.497 / 0.904 | 0.252 / 0.424 | 0.228 / 0.631 |
+| duplicate LIMIT 1 OFFSET 25 | 0.510 / 0.665 | 0.448 / 0.658 | 0.697 / 1.102 |
+| duplicate LIMIT 10 OFFSET 100 | 1.226 / 2.886 | 0.966 / 1.706 | 2.039 / 10.227 |
+| missing LIMIT 1 | 0.425 / 1.062 | 0.306 / 0.780 | 117.603 / 133.164 |
+| ordered LIMIT 1 | 49.563 / 56.686 | 48.518 / 57.149 | 134.493 / 140.111 |
+| DISTINCT LIMIT 3 OFFSET 1 | 0.240 / 0.320 | 0.199 / 0.638 | 0.160 / 0.258 |
+| aggregate LIMIT 1 | 46.271 / 52.579 | 48.127 / 54.183 | 136.148 / 153.029 |
+| unique equality | 0.427 / 0.597 | 0.321 / 0.646 | 121.634 / 128.519 |
+| duplicate without LIMIT | 62.157 / 127.421 | 79.531 / 114.451 | 169.421 / 283.315 |
+| late prefix LIMIT 1 | 0.250 / 0.613 | 0.192 / 0.610 | 0.125 / 0.446 |
+
+100k duplicate LIMIT 1 median (P1C-1 / planned / forced scan): **0.497 / 0.252 / 0.228 ms**. Measured regressions are retained: duplicate equality without LIMIT rose from **62.157 to 79.531 ms**, and aggregate LIMIT 1 from **46.271 to 48.127 ms**. Both retain indexed execution; this run does not establish the cause, and no universal speedup is claimed.
+
+Only duplicate LIMIT 1 with a match inside the first eight rows changes path. Its four planning reads are reported separately from four executor rows. Unique keys avoid probing; missing/late keys read at most eight scalars then retain the index. No-LIMIT, OFFSET and blocking controls retain streaming indexes. Compare every workload above: an extra probe/metadata can regress timings, and unrelated retained-path variation is not an optimizer gain. No total-cardinality or time-cost estimate is claimed; the positive probe proves only a bounded amount of row work. Thresholds (1,024 rows/eight probes) are intentionally conservative, not calibrated universal crossovers.
+
+## P1C-1 streaming SQL measurements (historical, 2026-11-13)
 
 `npm run benchmark:streaming` extracts the exact P1B-2B engine at `f39ff56d8961ac556e953ecf80cff328c5721cd7` into gitignored artifacts and measures predecessor indexed, current streaming and current forced-scan SQL in one Node process. Reproduction requires that commit in the local git object database; no checkout/branch is modified. All complete-result/access-path assertions passed. [Evidence](evidence/p1c1-streaming-benchmark.json) retains every wall sample, min/max, median/p95 and actual access counts for all 1k/10k/100k workloads. Raw report: `artifacts/p1c1-streaming-benchmark.json`.
 
