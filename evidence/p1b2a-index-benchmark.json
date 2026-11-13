@@ -1,0 +1,174 @@
+{
+  "command": "npx tsx tools/benchmark-index-read.ts",
+  "startedAt": "2026-11-13T02:07:25.067Z",
+  "finishedAt": "2026-11-13T02:07:41.757Z",
+  "sourceHashAtStart": "a7694ef0f42acdf483c8bc4771ee359ee9e2d89fd8db53ba7273548a223babc4",
+  "sourceHashAtEnd": "a7694ef0f42acdf483c8bc4771ee359ee9e2d89fd8db53ba7273548a223babc4",
+  "hardware": {
+    "platform": "linux",
+    "release": "6.18.57",
+    "arch": "x64",
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "logicalCpus": 3,
+    "parallelism": 2,
+    "cpuQuota": "200000 100000",
+    "memoryLimit": "8589934592",
+    "node": "v24.22.1"
+  },
+  "methodology": "Two warmup batches, seven measured batches per operation. Values are wall ms per call averaged over a batch; max is the largest batch average, not individual-call p95. Checksums asserted after timing; complete outputs checked before sampling. Hot repeated keys, no concurrent DML, shared Node host. Resolver includes copying the row; exact lookup includes resolution/copying all four matches; range includes resolving/copying all 40 rows. Full-array reference filters existing row objects without copying. Load includes logical restore, directory build and CREATE INDEX, outside read samples.",
+  "sqlSelectSpeedupClaim": false,
+  "workloads": [
+    {
+      "size": 10000,
+      "duplicateCount": 4,
+      "rangeRows": 40,
+      "loadMs": 1127.3995479999999,
+      "measurements": [
+        {
+          "name": "resolve one row ID",
+          "iterationsPerSample": 2000,
+          "warmupSamples": 2,
+          "samples": 7,
+          "perCallMs": [
+            0.00010399050000000898,
+            0.00008578849999992144,
+            0.00005766249999999218,
+            0.00005731900000000678,
+            0.0000698615000000018,
+            0.00006664849999992839,
+            0.00006486900000004425
+          ],
+          "medianMs": 0.00006664849999992839,
+          "maxMs": 0.00010399050000000898
+        },
+        {
+          "name": "exact lookup and resolve four rows",
+          "iterationsPerSample": 500,
+          "warmupSamples": 2,
+          "samples": 7,
+          "perCallMs": [
+            0.10127932999999985,
+            0.05142057999999997,
+            0.05327777800000012,
+            0.06475810199999978,
+            0.05757871599999999,
+            0.08306814200000008,
+            0.0678400300000003
+          ],
+          "medianMs": 0.06475810199999978,
+          "maxMs": 0.10127932999999985
+        },
+        {
+          "name": "bounded cursor, 40 resolved rows",
+          "iterationsPerSample": 100,
+          "warmupSamples": 2,
+          "samples": 7,
+          "perCallMs": [
+            0.12293226999999889,
+            0.10912683000000016,
+            0.14119520000000194,
+            0.10606610000000045,
+            0.10629490000000033,
+            0.14143211000000064,
+            0.09213226999999961
+          ],
+          "medianMs": 0.10912683000000016,
+          "maxMs": 0.14143211000000064
+        },
+        {
+          "name": "reference full-array filter, four matching rows",
+          "iterationsPerSample": 100,
+          "warmupSamples": 2,
+          "samples": 7,
+          "perCallMs": [
+            0.06949749999999995,
+            0.0840413599999988,
+            0.08682238000000098,
+            0.07618174999999837,
+            0.07145770999999967,
+            0.06897801000000073,
+            0.0681595799999991
+          ],
+          "medianMs": 0.07145770999999967,
+          "maxMs": 0.08682238000000098
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "duplicateCount": 4,
+      "rangeRows": 40,
+      "loadMs": 13472.775401,
+      "measurements": [
+        {
+          "name": "resolve one row ID",
+          "iterationsPerSample": 2000,
+          "warmupSamples": 2,
+          "samples": 7,
+          "perCallMs": [
+            0.00009833900000012363,
+            0.00010147199999937585,
+            0.00014061950000086653,
+            0.00016706650000014632,
+            0.00009187850000034814,
+            0.00008248400000047696,
+            0.00009828549999929237
+          ],
+          "medianMs": 0.00009833900000012363,
+          "maxMs": 0.00016706650000014632
+        },
+        {
+          "name": "exact lookup and resolve four rows",
+          "iterationsPerSample": 500,
+          "warmupSamples": 2,
+          "samples": 7,
+          "perCallMs": [
+            0.06502635799999916,
+            0.0666763119999996,
+            0.07395486000000165,
+            0.07927221199999986,
+            0.0721044699999984,
+            0.051408519999997224,
+            0.07437562199999957
+          ],
+          "medianMs": 0.0721044699999984,
+          "maxMs": 0.07927221199999986
+        },
+        {
+          "name": "bounded cursor, 40 resolved rows",
+          "iterationsPerSample": 100,
+          "warmupSamples": 2,
+          "samples": 7,
+          "perCallMs": [
+            0.12154179999999543,
+            0.13691283000000112,
+            0.15688140000000203,
+            0.11470757999999477,
+            0.11510774000000311,
+            0.11588581999998496,
+            0.10875293999999486
+          ],
+          "medianMs": 0.11588581999998496,
+          "maxMs": 0.15688140000000203
+        },
+        {
+          "name": "reference full-array filter, four matching rows",
+          "iterationsPerSample": 100,
+          "warmupSamples": 2,
+          "samples": 7,
+          "perCallMs": [
+            0.7745605599999908,
+            0.877925009999999,
+            0.7731136999999945,
+            0.7681394700000237,
+            0.7932111499999883,
+            0.7703770499999882,
+            0.7502858099999866
+          ],
+          "medianMs": 0.7731136999999945,
+          "maxMs": 0.877925009999999
+        }
+      ]
+    }
+  ]
+}

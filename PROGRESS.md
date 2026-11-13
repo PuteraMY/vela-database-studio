@@ -1,13 +1,14 @@
 # Progress
 
-Current milestone: P1B-1 index maintenance on `feat/vela-p1b1-index-maintenance`, based on verified P1A commit `5f25dab28c73b7661268119d7f718d0f76965896`. Local core, production-browser, differential and benchmark checks have completed; results are recorded below. SELECT, EXPLAIN and the studio remain unchanged. The separate PR targets the P1A branch; PR #1 and main must not be changed or merged.
+Current milestone: P1B-2A internal index reads on `feat/vela-p1b2a-index-read-path`, based on verified P1B-1 commit `77bfc1b264392cd5320ca5a52e413972570a2d6f`. Local verification is complete; preserved core/browser results and the resumed differential/benchmark checks are recorded below. SELECT, EXPLAIN, Worker protocol and UI remain unchanged. The stacked PR targets P1B-1; preserve PR #1, PR #2 and main.
 
 | Tier | Status | Verified boundary |
 | --- | --- | --- |
 | P0 — engine and playground | Complete with the documented SQL subset and limitations | Handwritten parser/evaluator, atomic constraints, pull operators, Worker execution, responsive studio, comparison, CSV, snippets and three P0 labs. All four core gates pass. |
 | P1A — physical pages and B+tree | Implemented and locally verified | Fixed byte pages, deterministic pager, full insert/delete/rebalance/range operations, invariant checks and snapshot adapter. Independent of SQL. |
 | P1B-1 — SQL index maintenance | Implemented and locally verified | Stable IDs, normalized SQL keys, real catalog trees, atomic DML and consistency diagnostics. |
-| P1B-2 / remaining P1 | Not started | No SELECT index access, optimizer/statistics/EXPLAIN changes or tree visualizer. |
+| P1B-2A — internal index reads | Implemented and locally verified | Lifetime-scoped handles, stable-ID directory resolution, actual B+tree exact/range reads and fail-fast cursors. |
+| P1B-2B / remaining P1 | Not started | No SELECT index access, optimizer/statistics/EXPLAIN changes or tree visualizer. |
 | P2 — transactions, WAL, MVCC | Not started | Snippet IndexedDB storage is not database persistence. Transaction commands are rejected. |
 | P3 — advanced SQL | Not started | No subqueries, CTEs, set operations or windows. Fuzz/benchmark tooling is available for P0. |
 
@@ -18,12 +19,12 @@ Current milestone: P1B-1 index maintenance on `feat/vela-p1b1-index-maintenance`
 | `npm run skills:verify` | Eight entrypoint hashes plus one license hash; one original Anthropic folder, seven legacy custom guides. |
 | `npm run typecheck` | Passed, strict TypeScript. |
 | `npm run lint` | Passed, zero warnings/errors. |
-| `npm test` | 443/443 passed (268 P0 + 127 P1A + 48 P1B-1); zero skipped. |
+| `npm test` | 511/511 passed (443 existing + 68 P1B-2A); zero skipped. |
 | `npm run build` | Passed; local fonts, Worker and SQLite WASM bundled. |
-| `npm run test:production` | P1B-1: 62/62 passed on the built app (1.4m); no tests skipped. |
+| `npm run test:production` | P1B-2A: 62/62 passed on the built app (1.3m); preserved from the pre-interruption run, no skips. |
 | `npm run curated` | 100/100 explicit expected results matched VELA and SQLite. |
 | `npm run fuzz` | 5,000/5,000 matched; seed 355866, 25 schemas, supported P0 syntax only. |
-| `npm run benchmark` | P1B-1 rerun completed: point/full scan 175.821 ms, aggregate 264.344 ms, nested-loop join 4118.031 ms medians; no indexed-SQL claim. |
+| `npm run benchmark` | P1B-2A: point/full scan 181.989 ms, aggregate 241.670 ms, nested-loop join 4245.250 ms medians; no indexed-SQL claim. |
 | `npm audit --json` | Zero known advisory findings in the final locked tree. |
 | `npx tsx tools/inspect-ui.ts` | No page overflow at 360/390/768/1100/1440; no collected page/console errors or warnings. |
 | `npx tsx tools/browser-profile.ts` | Desktop/mobile production lab measurements saved; nonzero frame samples and no collected errors. |
@@ -43,7 +44,7 @@ The final `npm run verify` ran skill integrity, typecheck, lint, all unit tests 
 
 ## Still unverified or unfinished
 
-P1B-2 index access/optimizer, P2/P3 behavior, six-lesson completeness, indexed performance targets, field Core Web Vitals, a sustained 60fps guarantee, manual screen-reader conformance, real-device/Safari/Firefox coverage, 500k browser stress performance, automatic skill catalog discovery and deployed-host headers remain unverified or absent. See REPORT.md for the full boundary and next ordered milestone.
+P1B-2B SELECT index access/optimizer, P2/P3 behavior, six-lesson completeness, indexed performance targets, field Core Web Vitals, a sustained 60fps guarantee, manual screen-reader conformance, real-device/Safari/Firefox coverage, 500k browser stress performance, automatic skill catalog discovery and deployed-host headers remain unverified or absent. See REPORT.md for the full boundary and next ordered milestone.
 
 ## GitHub repository publication
 
@@ -63,7 +64,7 @@ P1B-2 index access/optimizer, P2/P3 behavior, six-lesson completeness, indexed p
 - Local code is ready for the requested feature-branch push and PR; publication and exact CI status are reported with that checkpoint. No merge or deployment is authorized.
 - The P1A checkpoint stopped there. Its next task, subsequently authorized as P1B-1, was: introduce stable row identities and SQL-normalized keys, then maintain physical indexes atomically with catalog and DML changes before enabling query access paths.
 
-## P1B-1 checkpoint
+## P1B-1 checkpoint (historical)
 
 - Verified local/remote P1A branch head before branching; no edits to P1A storage algorithms, SELECT execution, parser, expression evaluator, Worker protocol, UI, dependencies or CI configuration.
 - Added `src/engine/indexes.ts` and integrated candidate identities/indexes into `Database` publication. Explicit CREATE/DROP INDEX and INSERT/UPDATE/DELETE now maintain real B+trees; table deletion cleans them up. Logical restore rebuilds trees atomically with new identity lifetimes.
@@ -71,3 +72,14 @@ P1B-2 index access/optimizer, P2/P3 behavior, six-lesson completeness, indexed p
 - First focused run found five test timeouts from expensive byte-array equality, with no semantic mismatch; exact hex serialization fixed comparison overhead. Final boundary suite: 48/48, 5.98s. Final core gate: 443/443, 58.34s, typecheck/lint/skills/build pass.
 - Next P1B-2 task is a read-only stable-ID resolver and exact-key access contract with differential tests before planner integration. No P1B-2, WAL/MVCC, merge, deployment, subagent or new skill installation is included.
 - Final release checks: production 62/62; curated 100/100; fuzz 5000/5000 (seed 355866). Benchmark completed with unchanged source during measurement; hardware and actual values are in BENCHMARK.md. Compact source-hashed evidence: `evidence/p1b1-verification.json`. Full logs remain under `artifacts/p1b1-*`. The commit/PR and remote CI status are reported at the GitHub checkpoint, not inferred from local passes.
+
+## P1B-2A checkpoint
+
+- Verified exact local/remote base, P1A parent and open PR #2 ancestry before branching. No existing PR branch, dependency, P1A storage algorithm, SELECT/binding helper, Worker protocol or UI file changed.
+- Internal table/index handles prevent stale lifetime/cross-owner reads. ID directories derive solely from P1B-1 IDs and publish atomically with rows/indexes. Exact search and lazy ordered scans use real B+trees; each returned entry resolves and checks its current row. Successful publications invalidate cursors; failed statements preserve read state.
+- 58 new physical/read tests include 900 seeded DML/reference-read steps (seeds 7, 2026, 3735928559), full/range/exact content checks, invariant batches, malformed/stale references, cleanup and instrumentation preventing table-scan fallback. Ten additional SQL/SQLite tests explicitly distinguish physical NULL lookup from SQL predicates.
+- Focused suite: 116/116 in 6.88s. Final `npm run verify`: skills/typecheck/lint, 511/511 tests across nine files in 64.56s, build in 3.06s. The benchmark harness's initial filename-overload type error was fixed by specifying UTF-8 before final verification; no test skips or semantic failures.
+- Stop after P1B-2A. Next P1B-2B starting point: a single-table equality index operator with differential SQL binding, residual predicate and fallback tests. No SELECT index execution, optimizer, persistence, transaction commands, subagents or new skill installations are included.
+- Resume on 2026-11-13: preserved the passing 511-test core log/build and 62-test production-browser log from 2026-11-12. Latest source/test/tool modification precedes both logs; no application/config changes followed. No expensive local suite was rerun.
+- Pending checks completed: curated 100/100; fuzz 5000/5000 (seed 355866); internal 10k/100k read benchmarks and existing SQL benchmark. At 100k rows, exact lookup plus four-row resolution median 0.072104 ms and 40-row bounded traversal 0.115886 ms. Full methodology/hardware/limits: BENCHMARK.md.
+- Compact source-hashed evidence: `evidence/p1b2a-verification.json`, `p1b2a-verify.log` and both benchmark JSON files. Full logs remain in `artifacts/p1b2a-*`. Publication/remote CI status is reported in the stacked PR after it actually executes, not inferred from local passes.

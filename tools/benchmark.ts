@@ -250,7 +250,7 @@ const report = {
   },
   load: {
     operation:
-      "Database.restore: structured clone + constraints + fresh internal row identities (fixture has no explicit indexes)",
+      "Database.restore: structured clone + constraints + fresh row identities and read directories (fixture has no explicit indexes)",
     warmups: 0,
     repetitions: restoreSamples.length,
     samplesMs: restoreSamples,

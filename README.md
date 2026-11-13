@@ -2,7 +2,7 @@
 
 A browser-only SQL engine and a studio that shows its actual execution operators. Repository: [PuteraMY/vela-database-studio](https://github.com/PuteraMY/vela-database-studio). Product copy is in Bahasa Melayu. Engine code, comments, and documentation are in English.
 
-The SQL engine and studio implement **P0**. **P1A** provides page-backed B+trees; **P1B-1** connects explicit SQL index definitions and atomic DML maintenance to those trees. SELECT still uses P0 scans. Planner index access/optimization, P2 transactions/durable database storage, and P3 advanced SQL are not implemented. See [REPORT.md](REPORT.md), [TESTING.md](TESTING.md), and [BENCHMARK.md](BENCHMARK.md) for evidence and limitations.
+The SQL engine and studio implement **P0**. **P1A** provides page-backed B+trees; **P1B-1** connects explicit SQL index definitions and atomic DML maintenance; **P1B-2A** adds verified internal index reads and stable-ID resolution. SELECT still uses P0 scans. Planner index access/optimization, P2 transactions/durable database storage, and P3 advanced SQL are not implemented. See [REPORT.md](REPORT.md), [TESTING.md](TESTING.md), and [BENCHMARK.md](BENCHMARK.md) for evidence and limitations.
 
 ## Run
 
@@ -94,7 +94,27 @@ There is **no optimizer**. Operators follow SQL semantics with nested-loop joins
 
 There is **no WAL or MVCC**. No transaction sessions, savepoints, checkpoints, database IndexedDB persistence, or crash recovery are implemented. Per-statement candidate-state validation provides atomicity only; it is not transaction isolation or durability. BEGIN/COMMIT/ROLLBACK are rejected.
 
-P1B-2 should first define a read-only stable-ID resolver and exact-key index access contract with differential tests before planner integration. Optimizer, WAL and MVCC work remains outside P1B-1.
+P1B-2A's `src/engine/index-reader.ts` provides internal engine reads, with no SQL syntax or Worker protocol additions:
+
+```ts
+const table = db.tableHandle("t");
+const index = db.indexHandle(table, "ix");
+const refs = db.lookupIndex(index, [1, "A"]); // Full key, normalized like maintenance.
+const rows = db.resolveRows(table, refs); // Detached current rows; no per-ID table scan.
+for (const entry of db.scanIndex(index, {
+  lower: { key: [1] }, upper: { key: [3], inclusive: false },
+})) {
+  // entry contains table handle, rowId, full key and a detached row.
+  console.log(entry.row);
+  break; // Closes the physical cursor.
+}
+```
+
+`resolveRow(ref)` returns one current row or throws for an invalid/deleted reference. Frozen table/index handles bind references to one database and object lifetime. DROP/recreation and logical restore invalidate old handles; ordinary UPDATE preserves row identity and resolves the new contents. Failed statements do not publish directories or invalidate cursors. Row directories are built once per successful publication (O(total rows)); individual resolution uses a keyed directory. Directory maps never substitute for B+tree key search.
+
+Exact physical lookup includes NULL and returns duplicates in ascending stable-ID order. It does not evaluate SQL equality. Missing keys return `[]`; invalid arity/nonfinite values/current slot overflow throw `IndexReadError`. Bounds accept full keys or lexicographic prefixes, default inclusive; upper `[1]` excludes full `[1, ...]` keys. Reverse traversal reverses the full key/ID order. All active cursors fail on their next pull after any successful DDL/DML/restore, including no-op or unrelated changes; closed cursors stay closed. There is no snapshot isolation. Handles cannot be serialized into durable references.
+
+P1B-2B should start with a single-table equality index operator and differential tests for SQL binding/residual predicates/fallbacks. No SELECT index operator or optimizer is activated in P1B-2A. Internal measurements can be reproduced with `npx tsx tools/benchmark-index-read.ts`.
 
 ## Studio and accessibility
 

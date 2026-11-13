@@ -8,7 +8,7 @@ import {
   type Entry,
   type Key,
 } from "./storage/page";
-import { SqlError, type DatabaseState, type Row } from "./types";
+import { SqlError, type DatabaseState, type Row, type Value } from "./types";
 
 /** IDs are stable values; the parallel array only associates them with P0 rows. */
 export interface TableIdentity {
@@ -37,10 +37,19 @@ export function restoreIdentities(state: DatabaseState): RowIdentities {
 }
 
 export function sqlIndexKey(row: Row, columns: readonly string[]): Key {
-  return columns.map((column) => {
-    if (!Object.hasOwn(row, column))
-      throw new SqlError(`Lajur indeks “${column}” tiada dalam rekod.`);
-    const value = normalize(row[column]);
+  return normalizeIndexKey(
+    columns.map((column) => {
+      if (!Object.hasOwn(row, column))
+        throw new SqlError(`Lajur indeks “${column}” tiada dalam rekod.`);
+      return row[column];
+    }),
+  );
+}
+
+/** Shared physical key normalization; this is not SQL equality evaluation. */
+export function normalizeIndexKey(values: readonly Value[]): Key {
+  return values.map((item) => {
+    const value = normalize(item);
     return Object.is(value, -0) ? 0 : value;
   });
 }

@@ -1,6 +1,22 @@
 # Testing record
 
-## P1B-1 verification
+## P1B-2A verification
+
+`npm run verify` passed skills integrity, strict typecheck, lint, **511/511 tests across nine files, zero skipped**, and the production build. Unit duration: 64.56s; build: 3.06s. Focused read/maintenance/SQL suites passed **116/116 in 6.88s**. Existing 443 tests remain included. An initial benchmark-only TypeScript overload error (`readdirSync` names inferred as string-or-buffer) was corrected with explicit UTF-8 encoding before final verification.
+
+The 68 additions comprise 58 physical/read tests and 10 SQL differential cases. Resolver tests cover current/deleted/missing IDs, UPDATE stability, overlapping IDs across tables, forged/foreign handles and DROP/recreation/restore lifetimes. Index tests cover duplicates, UNIQUE, NULL, strict mixed types, repeated columns, slot growth, exact misses/errors, all range endpoints/directions, prefix bounds, split/merge/root contraction and cleanup. Successful publications invalidate active cursors even before first pull; failed mutations/restore and reads leave them valid.
+
+Three seeded workloads (7, 2026, 3735928559), 300 DML attempts each, compare exact IDs/resolved contents and random bounded scans to an independent reference list at every step; complete scans and invariants run every ten steps and at the end. Failure labels include seed, step and recent SQL. Instrumented tests throw on table-array access after directory publication, verify B+tree calls through both the read service and Database API, force empty physical results to detect fallback, and count iterator pulls/cleanup. SQL differential cases use real SQLite for SQL results only; raw physical NULL lookup is explicitly different from `= NULL`.
+
+Logs: `artifacts/p1b2a-focused.log`, `p1b2a-focused-final.log`, `p1b2a-verify.log`. No dependencies or subagents were added. P1A storage files and SELECT/binding/parser/evaluator/Worker/UI paths were verified unchanged against the exact base.
+
+Resume verification on 2026-11-13 preserved valid pre-interruption results: the latest source/test/tool modification was 2026-11-12 18:27:12 UTC, followed by the core gate log/build at 18:29:56 and the completed production-browser log at 18:31:47. No application/config edits occurred after the gate. `npm run test:production` had already passed **62/62 in 1.3m**, including responsive layout and console/network checks, so neither it nor the expensive core suite was rerun locally.
+
+Pending checks ran after resumption: `npm run curated` **100/100**, `npm run fuzz` **5000/5000**, seed 355866, zero mismatches; `npx tsx tools/benchmark-index-read.ts` completed asserted 10k/100k internal-read measurements; `npm run benchmark` completed all asserted SQL workloads. SQLite checks validate supported SQL results, not the internal API directly. Both benchmark source hashes remained unchanged. See BENCHMARK.md for actual values, hardware and methodology.
+
+Logs: `artifacts/p1b2a-production.log`, `p1b2a-curated.log`, `p1b2a-fuzz.log`, `p1b2a-index-benchmark.log`, `p1b2a-benchmark.log`. Compact evidence is tracked under `evidence/p1b2a-*`. Git diff checks confirm P1A storage and SQL SELECT/binding helpers, parser/evaluator, Worker/UI and dependencies remain unchanged from the verified base.
+
+## P1B-1 verification (historical)
 
 `npm run verify` passes skills integrity, strict typecheck, lint, **443/443 unit tests across seven files (zero skipped)** and production build. Final unit duration: 58.34s; build: 3.28s. The added 48 tests cover stable IDs, SQL key normalization, populated/empty/single/composite/UNIQUE indexes, NULLs, all DML, no-op changes, drop/recreation/restore, detached diagnostics, constraint/physical-allocation rollback and exact byte preservation after failed statements.
 

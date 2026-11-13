@@ -1,5 +1,22 @@
 # Measured performance
 
+## P1B-2A measurements (2026-11-13)
+
+After resuming the unchanged, verified implementation, ran `npx tsx tools/benchmark-index-read.ts` and `npm run benchmark`. Raw samples: [internal reads](evidence/p1b2a-index-benchmark.json) and [SQL regression](evidence/p1b2a-benchmark.json). Both commands completed their correctness assertions and recorded matching source hashes at start/end. Hardware: Linux 6.18.57 x64, Intel Xeon Platinum 8573C, Node 24.22.1; 3 visible CPUs, available parallelism 2, 2-core CPU quota, 8 GiB memory limit.
+
+| Internal operation | 10,000 rows, median | 100,000 rows, median |
+| --- | --- | --- |
+| resolve one row ID | 0.000067 ms | 0.000098 ms |
+| exact lookup and resolve four rows | 0.064758 ms | 0.072104 ms |
+| bounded cursor, 40 resolved rows | 0.109127 ms | 0.115886 ms |
+| reference full-array filter, four matching rows | 0.071458 ms | 0.773114 ms |
+
+Each operation uses two warmup batches and seven measured batches. Medians are per-call wall times averaged within each batch (2,000 resolver calls, 500 exact lookups, 100 range scans or 100 reference filters). These hot repeated-key Node measurements are not individual-call p95, browser latency or a general performance guarantee. Resolver timings include returning a detached row; exact lookup includes resolving/copying four matching rows; bounded scans resolve/copy all 40 rows. The reference uses a plain array filter without SQL execution or copying. Complete outputs are compared before timing, checksums after each timed batch. Loading/index creation is excluded from read timings and reported separately in the raw evidence.
+
+These are internal read-path measurements, **not SQL SELECT speedups**. The unchanged SQL executor benchmark on 100k rows measured point/full-scan median **181.989 ms**, aggregate **241.670 ms**, materialization **387.757 ms**, and nested-loop 100k × 100 join **4245.250 ms**. Aggregate meets the 1 s target; the indexed point/join targets remain unimplemented. Logical restore median was **222.717 ms**, including fresh identities and read directories. Process-wide RSS after queries was **442.8 MiB**. Shared-host scheduling and the differing workload/measurement methods prevent treating the internal/reference/SQL numbers as interchangeable.
+
+Measurements preceded the milestone commit: the SQL report's `gitCommit` names the P1B-1 base, while its source hash and `p1b2a-verification.json` file hashes identify the measured P1B-2A working tree.
+
 ## P1B-1 rerun (2026-11-12)
 
 `npm run benchmark` completed after the final P1B-1 build/browser/differential gates. Full samples: [evidence/p1b1-benchmark.json](evidence/p1b1-benchmark.json). Source hashes at start/end match. Hardware: Linux 6.18.57 x64, Intel Xeon Platinum 8573C, Node 24.22.1; 3 visible logical CPUs, available parallelism 2, CPU quota 2 cores, memory limit 8 GiB. Shared-host timing is not a browser or production latency guarantee.
