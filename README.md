@@ -2,7 +2,7 @@
 
 A browser-only SQL engine and a studio that shows its actual execution operators. Repository: [PuteraMY/vela-database-studio](https://github.com/PuteraMY/vela-database-studio). Product copy is in Bahasa Melayu. Engine code, comments, and documentation are in English.
 
-The SQL engine and studio implement **P0**. **P1A** provides page-backed B+trees; **P1B-1** connects explicit SQL index definitions and atomic DML maintenance; **P1B-2A** adds verified internal index reads and stable-ID resolution. **P1B-2B** executes a safe subset of single-table equality SELECTs through explicit indexes, retaining P0 scans for other queries. Cost-based optimization, P2 transactions/durable database storage, and P3 advanced SQL are not implemented. See [REPORT.md](REPORT.md), [TESTING.md](TESTING.md), and [BENCHMARK.md](BENCHMARK.md) for evidence and limitations.
+The SQL engine and studio implement **P0**. **P1A** provides page-backed B+trees; **P1B-1** connects explicit SQL index definitions and atomic DML maintenance; **P1B-2A** adds verified internal index reads and stable-ID resolution. **P1B-2B** executes a safe subset of single-table equality SELECTs through explicit indexes, retaining P0 scans for other queries. **P1C-1** streams those equality results and closes cursors when downstream LIMIT completes. Cost-based optimization, P2 transactions/durable database storage, and P3 advanced SQL are not implemented. See [REPORT.md](REPORT.md), [TESTING.md](TESTING.md), and [BENCHMARK.md](BENCHMARK.md) for evidence and limitations.
 
 ## Run
 
@@ -122,7 +122,7 @@ NULL equality, mixed text/numeric operands, dates, CASE, AND/OR, ranges, column 
 
 `QueryResult.trace[].access` records the actual source (`index-equality` or `table-scan`), index/fallback reason and performed lookup/match counts. LIMIT 0 performs zero lookups. Existing EXPLAIN ANALYZE shows `Carian indeks` only for the selected index source; plain EXPLAIN remains unsupported. The internal constructor option `selectAccess: "table-scan"` provides reference comparisons without modifying SQL.
 
-Exact lookup eagerly validates all matching references before emitting rows, so LIMIT on a common key can be slower than a scan that stops early. SQL-level measurements and this tradeoff are in BENCHMARK.md. `npm run benchmark` runs the original scan/join fixture and paired indexed SELECT workloads at 1k/10k/100k rows. Earlier internal-read measurements remain reproducible with `npx tsx tools/benchmark-index-read.ts`. P1C optimizer work is deferred.
+The SELECT source now streams an exact bounded cursor through the existing ID directory. LIMIT/OFFSET count qualifying downstream rows; original WHERE and DISTINCT remain active, while ORDER BY/grouping/aggregates still consume required input. Operator completion/error/return closes the cursor; closed operators cannot restart. Raw `lookupIndex` remains the eager internal API. Trace `lookupCalls` counts cursor opens and `matchedRowIds` counts consumed validated entries, not total cardinality. SQL-level before/after measurements are in BENCHMARK.md; reproduce them with `npm run benchmark:streaming`. `npm run benchmark` runs the original scan/join fixture and paired indexed SELECT workloads at 1k/10k/100k rows. Earlier internal-read measurements remain reproducible with `npx tsx tools/benchmark-index-read.ts`. P1C-2 optimizer work is deferred.
 
 ## Studio and accessibility
 

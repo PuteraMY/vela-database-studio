@@ -152,7 +152,7 @@ describe("authoritative scan fallback and errors", () => {
     "SELECT id FROM t a,t b WHERE id=1",
   ])("preserves binding/parser errors: %s", (sql) => {
     const { auto, scan } = indexedPair(),
-      search = vi.spyOn(BPlusTree.prototype, "search");
+      search = vi.spyOn(BPlusTree.prototype, "scan");
     try {
       const error = (db: Database) => {
         try {
@@ -303,12 +303,16 @@ describe("catalog lifecycle and exact live rows", () => {
 describe("physical execution evidence", () => {
   it("calls the actual B+tree and emits no table-scan operator", () => {
     const { auto } = indexedPair(),
-      search = vi.spyOn(BPlusTree.prototype, "search"),
-      resolve = vi.spyOn(auto, "resolveRow");
+      search = vi.spyOn(BPlusTree.prototype, "scan"),
+      eager = vi.spyOn(auto, "lookupIndex");
     try {
       const result = auto.execute("SELECT id FROM t WHERE n=1")[0];
-      expect(search).toHaveBeenCalledExactlyOnceWith([1]);
-      expect(resolve).toHaveBeenCalledTimes(2);
+      expect(search).toHaveBeenCalledExactlyOnceWith({
+        lower: { key: [1], inclusive: undefined },
+        upper: { key: [1], inclusive: undefined },
+        reverse: undefined,
+      });
+      expect(eager).not.toHaveBeenCalled();
       expect(result.trace.some((t) => t.operator === "Imbasan jadual")).toBe(
         false,
       );
@@ -323,16 +327,16 @@ describe("physical execution evidence", () => {
           matchedRowIds: 2,
         },
       });
-      search.mockReturnValueOnce([]);
+      search.mockReturnValueOnce((function* () {})());
       expect(auto.execute("SELECT id FROM t WHERE n=1")[0].rows).toEqual([]);
     } finally {
       search.mockRestore();
-      resolve.mockRestore();
+      eager.mockRestore();
     }
   });
   it("fallback emits a scan and never probes the tree", () => {
     const { auto } = indexedPair(),
-      search = vi.spyOn(BPlusTree.prototype, "search");
+      search = vi.spyOn(BPlusTree.prototype, "scan");
     try {
       const result = auto.execute("SELECT id FROM t WHERE n=1 OR n=2")[0];
       expect(result.rows).toEqual([[1], [2], [3]]);
@@ -348,10 +352,17 @@ describe("physical execution evidence", () => {
   it("still evaluates the complete original predicate", () => {
     const { auto } = indexedPair(),
       table = auto.tableHandle("t");
-    const lookup = vi.spyOn(auto, "lookupIndex").mockReturnValueOnce([
-      { table, rowId: 1 },
-      { table, rowId: 5 },
-    ]);
+    const lookup = vi.spyOn(auto, "scanIndex").mockReturnValueOnce(
+      (function* () {
+        for (const rowId of [1, 5])
+          yield {
+            table,
+            rowId,
+            key: [1],
+            row: auto.resolveRow({ table, rowId }),
+          };
+      })(),
+    );
     try {
       const result = auto.execute("SELECT id FROM t WHERE n=1")[0];
       expect(result.rows).toEqual([[1]]);
@@ -364,7 +375,7 @@ describe("physical execution evidence", () => {
   it("does not hide a runtime index error behind a scan", () => {
     const { auto } = indexedPair(),
       failure = new IndexReadError("STALE_INDEX", "Rujukan luput.");
-    const lookup = vi.spyOn(auto, "lookupIndex").mockImplementationOnce(() => {
+    const lookup = vi.spyOn(auto, "scanIndex").mockImplementationOnce(() => {
       throw failure;
     });
     try {
@@ -373,9 +384,9 @@ describe("physical execution evidence", () => {
       lookup.mockRestore();
     }
   });
-  it("separates actual lookup, match count and limited emitted rows", () => {
+  it("counts only streamed matches and limited emitted rows", () => {
     const { auto } = indexedPair(),
-      search = vi.spyOn(BPlusTree.prototype, "search");
+      search = vi.spyOn(BPlusTree.prototype, "scan");
     try {
       const zero = auto.execute("SELECT id FROM t WHERE n=1 LIMIT 0")[0];
       expect(search).not.toHaveBeenCalled();
@@ -386,7 +397,7 @@ describe("physical execution evidence", () => {
       const one = auto.execute("SELECT id FROM t WHERE n=1 LIMIT 1")[0];
       expect(accesses(one)[0]).toMatchObject({
         rowsOut: 1,
-        access: { lookupCalls: 1, matchedRowIds: 2 },
+        access: { lookupCalls: 1, matchedRowIds: 1 },
       });
       const missing = auto.execute("SELECT id FROM t WHERE n=99")[0];
       expect(accesses(missing)[0]).toMatchObject({

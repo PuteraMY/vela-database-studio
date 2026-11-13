@@ -1,5 +1,14 @@
 # Decisions
 
+## P1C-1 streaming equality execution
+
+- Verified local/remote P1B-2B commit `f39ff56d8961ac556e953ecf80cff328c5721cd7` and open PR #4 targeting P1B-2A before creating `feat/vela-p1c1-streaming-index`. The new request supersedes the prior stop rule. Work alone; preserve PRs #1–#4, storage/DML/read algorithms, SQL eligibility, Worker protocol, UI and dependencies. Target P1B-2B; no merge/deployment or P1C-2 work.
+- Replace eager `lookupIndex` in the eligible SELECT source with existing `scanIndex` using identical inclusive lower/upper keys. Its cursor already resolves/validates stable IDs and copies live rows; no second resolver or duplicate materialization is needed. Duplicate entries remain in ascending stable-ID order. Existing ownership/revision checks reject stale cursors and missing references on pull.
+- LIMIT remains downstream of original WHERE, projection, DISTINCT, grouping and sorting. Do not push a row quota into the cursor. OFFSET counts qualifying downstream rows; DISTINCT can safely stop after enough distinct rows; sorting/grouping/aggregates still consume their required input. LIMIT 0 never opens the source. No new predicates or index range planning are introduced.
+- Add idempotent IteratorClose propagation to `Operator` on completion, explicit return and execution errors. This reaches manually pulled LIMIT inputs and closes the index generator/cursor promptly. Closed operators cannot restart. Preserve the original execution error if cleanup also throws. Fail-fast cursor semantics are not snapshot isolation.
+- Keep trace field names compatible: `lookupCalls` now counts opened equality cursors; `matchedRowIds` counts validated entries actually pulled, never the unread key cardinality. Source rowsOut remains emitted frames, not physical page reads. LIMIT demand and original predicate filtering can therefore be audited without an eager count.
+- A dedicated benchmark extracts the exact predecessor's engine from git into gitignored artifacts and measures predecessor indexed, current streaming and current forced-scan SQL on identical fixtures in one Node process. Rotate execution order, warm up, retain repeated samples, assert complete outputs, and report blocking-query/control results as well as LIMIT improvements. This adds no runtime mode/dependency. P1C-2 requires a new instruction.
+
 ## P1B-2B safe SQL equality execution
 
 - The authorized P1B-2B request supersedes the old P1B-2A stop rule. Verified exact local/remote base `8744b46b188664b1a88925764a35064da147dc84` and open PR #3 targeting P1B-1. Work alone on `feat/vela-p1b2b-indexed-select`; preserve PRs #1–#3 and target P1B-2A. No dependencies, shared skills, UI or storage-algorithm changes.

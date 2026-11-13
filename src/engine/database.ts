@@ -585,13 +585,11 @@ export class Database {
         this.selectAccess,
       );
       if (access.kind === "table-scan") return scan(s, access.reason);
-      const lookup = () =>
-        this.lookupIndex(
+      const openCursor = () =>
+        this.scanIndex(
           this.indexHandle(this.tableHandle(s.table), access.index),
-          access.key,
+          { lower: { key: access.key }, upper: { key: access.key } },
         );
-      const resolve = (reference: RowReference) =>
-        qualified(this.resolveRow(reference), s.alias);
       const evidence: Extract<AccessTrace, { kind: "index-equality" }> = {
         kind: "index-equality",
         table: s.table,
@@ -605,9 +603,11 @@ export class Database {
         [],
         function* () {
           evidence.lookupCalls++;
-          const references = lookup();
-          evidence.matchedRowIds = references.length;
-          for (const reference of references) yield { row: resolve(reference) };
+          // Equal inclusive bounds retain stable-ID order without collecting matches.
+          for (const entry of openCursor()) {
+            evidence.matchedRowIds++;
+            yield { row: qualified(entry.row, s.alias) };
+          }
         },
       );
       source.trace.access = evidence;

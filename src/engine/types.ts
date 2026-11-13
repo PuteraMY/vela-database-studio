@@ -125,7 +125,9 @@ export type AccessTrace =
       kind: "index-equality";
       table: string;
       index: string;
+      /** Physical equality cursors opened (zero if the source is never pulled). */
       lookupCalls: number;
+      /** Validated entries actually pulled, not total matching cardinality. */
       matchedRowIds: number;
     };
 export interface Trace {

@@ -1,8 +1,18 @@
 # VELA delivery and skills integration report
 
-Verification finalized on 2026-11-13. **P0 through P1B-2B are locally verified. Safe single-table equality SELECT now uses explicit B+trees; other queries retain P0 scans. General optimization, P2 and P3 remain unimplemented. The full original project is not finished.**
+Verification finalized on 2026-11-13. **P0 through P1C-1 are locally verified. Safe single-table equality SELECT now uses explicit B+trees; other queries retain P0 scans. General optimization, P2 and P3 remain unimplemented. The full original project is not finished.**
 
-## P1B-2B SQL execution checkpoint
+## P1C-1 streaming execution checkpoint
+
+Eligible equality SELECT now streams the existing exact-bounded B+tree cursor and validated current rows, retaining stable-ID order, WHERE/projection and authoritative scan fallback. LIMIT/OFFSET counts qualifying downstream output; DISTINCT counts distinct results; sorting/grouping/aggregates consume required full input. Operator completion/return/error closes the cursor chain and prevents reuse. Trace lookupCalls counts cursor opens; matchedRowIds counts consumed validated entries, not unread key cardinality. Eligibility, storage/DML/read algorithms, Worker protocol and UI remain unchanged.
+
+All local gates passed: skills/typecheck/lint/build, **658/658 units**, **66/66 production browser**, curated **100/100**, fuzz **5000/5000**. The 36 new tests cover SQL/reference/SQLite results, actual cursor pull counts, residual filtering, cleanup and invalidation; existing 1,000 seeded three-way comparisons remain active. Corrected test/tool issues and source hashes are recorded in TESTING.md and `evidence/p1c1-verification.json`.
+
+100k duplicate LIMIT 1: **17.626 ms before / 0.257 ms streaming / 0.113 ms scan**. Validated entries fall from 10,000 eagerly collected references to one consumed entry. Early-match scans can remain faster; blocking operators retain full work. BENCHMARK.md records actual contemporaneous samples and hardware, not an extrapolated speedup.
+
+Branch `feat/vela-p1c1-streaming-index` starts at verified `f39ff56d8961ac556e953ecf80cff328c5721cd7`; stacked review targets P1B-2B, preserving PRs #1–#4/main. No subagents/new skill/dependency/service, merge or deployment. Memory-only storage and fail-fast cursor invalidation remain; no new range/join/cost planning. Stop at P1C-1. Remote CI status is separate from local evidence and reported with the PR.
+
+## P1B-2B SQL execution checkpoint (historical)
 
 Added post-binding eligibility and a source operator using the real B+tree exact lookup and stable-ID resolver. Supported predicates are a complete direct-column `=`/`==` comparison with a compatible literal/arithmetic/allowlisted pure-function constant, in either operand order, on one base table and an explicit single-column index. The original WHERE and downstream pipeline remain active. NULL equality, mixed types, unsafe constants, composite predicates, AND/OR, ranges and joins use the authoritative scan path; unsupported syntax still errors. Multiple indexes use deterministic name ordering, not a cost model.
 
@@ -73,20 +83,20 @@ This continuation corrected virtual-spacer paint/layout shifts, graph clipping, 
 
 | Executed command/check | Result |
 | --- | --- |
-| `npm run verify` | Skill integrity, strict typecheck, lint, 622/622 unit tests and production build passed; no emitted warnings/errors. |
-| `npm run test:production` | 66 distinct desktop/mobile cases have passing evidence (62 retained + four corrected tests); initial four locator failures documented, zero skipped/flaky cases. |
+| `npm run verify` | Skill integrity, strict typecheck, lint, 658/658 unit tests and production build passed; no emitted warnings/errors. |
+| `npm run test:production` | 66/66 passed in the P1C-1 full production run; zero skipped/flaky/unexpected cases. |
 | `npm run curated` | 100/100 hand-written expected result sets verified in VELA and SQLite. |
 | `npm run fuzz` | 5,000/5,000 matched (100%), seed 355866, 25 randomized schemas, 20 P0 query categories. |
 | `npm audit --json` (historical P0) | Zero known advisory findings at that run; initial audit had 2 critical and 8 moderate. |
 | `npx tsx tools/inspect-ui.ts` (historical P0) | 360/390/768/1100/1440 layouts have no document/body horizontal overflow; no collected page/console errors or warnings. |
 | `npx tsx tools/browser-profile.ts` (historical P0) | Real production Worker/result/scroll measurements, zero collected errors; limitations below. |
-| `npm run benchmark` | Assertions passed, measured source hash unchanged; indexed equality and aggregate targets met on measured fixtures; indexed joins remain absent. |
+| `npm run benchmark:streaming` | Exact predecessor/current/scan assertions passed, source hash unchanged; LIMIT improves, early-match scans can still win. |
 
 The fuzzer's initial match rate was **98.44% (4,922/5,000)**. All 78 observed mismatches were fixed: REAL division 40, Unicode LIKE 20, SUBSTR bounds 13, boolean IS predicates 5. The final run has no unresolved mismatches **within its generated subset**. It excludes P3 subqueries, CTEs, set operations/windows and P1/P2 systems. Unsupported probes are recorded separately, never counted as matching errors. Ordered cell comparison uses a 1e-10 floating tolerance and excludes labels. This is not universal SQLite compatibility: strict stored types, JavaScript numeric limits and limited date formats intentionally differ. The comparison UI test demonstrates one known unsupported `%j` date format instead of concealing it.
 
 Chromium tests include axe A/AA scans on initial desktop/mobile screens, keyboard interaction, reduced motion, 44px mobile control geometry, swipe, empty/error states, local assets and 100k virtualization. They do not establish full screen-reader or cross-browser conformance. Required B-tree stepping/transaction/rollback feature tests cannot pass as feature tests until P1/P2 exist; current tests verify honest unavailability and rejection without mutation.
 
-## Performance against targets
+## P1B-2B performance against targets (historical)
 
 The final Node benchmark used 100k fact rows and 100 dimension rows on Intel Xeon Platinum 8573C, Linux, Node 24.22.1, a two-CPU container quota and 8 GiB memory limit. Detailed warmups, samples, p95 and browser results are in [BENCHMARK.md](BENCHMARK.md).
 
@@ -119,11 +129,11 @@ Playwright tests, security changes, UI implementation and final documents were r
 - Strict storage types and IEEE-754 numbers differ from SQLite affinity/64-bit integers. Date functions implement a documented small UTC subset. Arbitrary SQL compatibility is not promised by the 100% sampled match rate.
 - Only Chromium was exercised. Field performance, real-device behavior, full assistive-technology review and hosted security-header delivery are not verified.
 
-This checkpoint stops at P1B-2B. P1C requires a new instruction: begin by defining the logical/physical planning contract and estimate/actual evidence before extending access rules. P2 and P3 remain ordered after verified P1.
+This checkpoint stops at P1C-1. P1C-2 requires a new instruction before broader planning or access rules. P2 and P3 remain ordered after verified P1.
 
 ## Release assessment
 
-This is a tested educational P0 SQL studio with verified P1A storage, P1B-1 maintenance, P1B-2A internal reads, P1B-2B bounded indexed SQL and reproducible evidence. It is not a completed transactional database or a durable production datastore. The requested eight-name source review is complete, with one original vendor folder verified and seven legacy guides awaiting upstream replacements; native automatic catalog registration is unverified. The full original “done when” bar is not met because later tiers and indexed joins are absent.
+This is a tested educational P0 SQL studio with verified P1A storage, P1B-1 maintenance, P1B-2A internal reads, P1B-2B bounded indexed SQL, P1C-1 streaming/early termination and reproducible evidence. It is not a completed transactional database or a durable production datastore. The requested eight-name source review is complete, with one original vendor folder verified and seven legacy guides awaiting upstream replacements; native automatic catalog registration is unverified. The full original “done when” bar is not met because later tiers and indexed joins are absent.
 
 The static build is ready for an approved preview deployment, subject to the explicit P0 limits above. After the user created [PuteraMY/vela-database-studio](https://github.com/PuteraMY/vela-database-studio), the project was published to its main branch. The initial remote commit and owner's MIT license were preserved in merge commit `9b58b91`, along with the full local development history. No unrelated project or shared skills repository was modified. No production site deployment occurred. npm/Chromium/skill access succeeded; omitted engine tiers are scope limits rather than installation failures.
 

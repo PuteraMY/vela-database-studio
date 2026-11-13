@@ -1,6 +1,28 @@
 # Measured performance
 
-## P1B-2B SQL measurements (2026-11-13)
+## P1C-1 streaming SQL measurements (2026-11-13)
+
+`npm run benchmark:streaming` extracts the exact P1B-2B engine at `f39ff56d8961ac556e953ecf80cff328c5721cd7` into gitignored artifacts and measures predecessor indexed, current streaming and current forced-scan SQL in one Node process. Reproduction requires that commit in the local git object database; no checkout/branch is modified. All complete-result/access-path assertions passed. [Evidence](evidence/p1c1-streaming-benchmark.json) retains every wall sample, min/max, median/p95 and actual access counts for all 1k/10k/100k workloads. Raw report: `artifacts/p1c1-streaming-benchmark.json`.
+
+Hardware: Linux 6.18.57 x64, Intel Xeon Platinum 8573C, Node 24.22.1; three visible CPUs, two available/CPU quota, 8 GiB memory limit. Identical fixtures have id=i+1, k=i%10, v=floor(i/10)%5 and one explicit k index. Two warmups and nine measured runs per mode/workload; rotate mode order. Includes SQL parsing, binding, cursor/scan, row resolution, WHERE, downstream operators and complete materialization. Excludes fixture/index creation, assertions and Worker/DOM transfer. No build/browser suite ran concurrently; engine hashes matched before/after. Nine-sample nearest-rank p95 equals the maximum; warmed shared-host Node timings are not field latency guarantees.
+
+| Rows | Workload | Before median / p95 ms | Streaming median / p95 ms | Scan median / p95 ms |
+| ---: | --- | ---: | ---: | ---: |
+| 1,000 | duplicate LIMIT 1 | 0.934 / 2.707 | 0.537 / 3.178 | 0.213 / 0.987 |
+| 10,000 | duplicate LIMIT 1 | 2.390 / 4.679 | 0.208 / 0.364 | 0.076 / 0.136 |
+| 100,000 | duplicate LIMIT 1 | 17.626 / 22.950 | 0.257 / 2.087 | 0.113 / 0.210 |
+| 100,000 | duplicate LIMIT 1 OFFSET 25 | 15.137 / 22.374 | 0.372 / 1.541 | 0.448 / 0.818 |
+| 100,000 | duplicate LIMIT 10 OFFSET 100 | 15.620 / 20.498 | 0.826 / 1.956 | 1.673 / 3.130 |
+| 100,000 | missing LIMIT 1 | 0.309 / 0.350 | 0.251 / 0.365 | 114.837 / 118.742 |
+| 100,000 | ordered LIMIT 1 | 44.755 / 51.481 | 46.687 / 60.597 | 133.015 / 143.033 |
+| 100,000 | DISTINCT LIMIT 3 OFFSET 1 | 20.451 / 35.125 | 0.255 / 1.580 | 0.124 / 0.188 |
+| 100,000 | aggregate LIMIT 1 | 41.208 / 74.395 | 50.183 / 59.765 | 149.314 / 184.718 |
+
+100k duplicate LIMIT 1: **17.626 ms before / 0.257 ms streaming / 0.113 ms scan**. Validated entries fall from 10,000 eagerly collected references to one consumed entry.
+
+OFFSET 25 consumes 26 entries; LIMIT 10 OFFSET 100 consumes 110; DISTINCT LIMIT 3 OFFSET 1 consumes four. ORDER BY and aggregate controls consume all 10k matches and preserve full results. The reference scan still wins when a matching row occurs early; no cost heuristic is added. Blocking-query timings vary and are not promised to improve. Unordered LIMIT/DISTINCT follows existing fixture order, not a universal SQL ordering guarantee. Historical P1B-2B numbers below used a different fixture/harness and are not substituted for this contemporaneous comparison.
+
+## P1B-2B SQL measurements (historical, 2026-11-13)
 
 `npm run benchmark` completed both asserted harnesses sequentially, with no browser suite/build running concurrently. [Paired SQL evidence](evidence/p1b2b-indexed-sql-benchmark.json) retains all wall samples, min/max, median/p95, source timing and actual access evidence; full raw samples remain in `artifacts/benchmark-indexed-select.json`. [Original scan/join regression](evidence/p1b2b-scan-benchmark.json) retains its samples. Each harness checked unchanged engine source hashes before/after. Measurements precede the feature commit; file hashes in `p1b2b-verification.json` identify the actual measured working tree.
 

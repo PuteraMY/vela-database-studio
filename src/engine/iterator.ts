@@ -9,6 +9,7 @@ export interface Frame {
 export class Operator implements Iterable<Frame> {
   readonly trace: Trace;
   private iterator: Iterator<Frame> | undefined;
+  private closed = false;
   constructor(
     id: number,
     name: string,
@@ -22,16 +23,36 @@ export class Operator implements Iterable<Frame> {
     });
   }
   next(): IteratorResult<Frame> {
+    if (this.closed) return { done: true, value: undefined };
     this.iterator ??= this.produce();
     const start = performance.now();
     try {
       const result = this.iterator.next();
       if (!result.done) this.trace.rowsOut++;
+      else this.return();
       return result;
+    } catch (error) {
+      try {
+        this.return();
+      } catch {
+        // Preserve the execution error if cleanup also fails.
+      }
+      throw error;
     } finally {
       this.trace.ms += performance.now() - start;
       this.trace.rowsIn = this.inputs.reduce((n, o) => n + o.trace.rowsOut, 0);
     }
+  }
+  /** IteratorClose propagates through manual pulls (LIMIT) and nested operators. */
+  return(): IteratorResult<Frame> {
+    if (this.closed) return { done: true, value: undefined };
+    this.closed = true;
+    try {
+      this.iterator?.return?.();
+    } finally {
+      for (const input of this.inputs) input.return();
+    }
+    return { done: true, value: undefined };
   }
   [Symbol.iterator]() {
     return this;
