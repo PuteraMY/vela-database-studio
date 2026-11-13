@@ -1,5 +1,15 @@
 # Testing record
 
+## P1C-1 verification
+
+`npm run verify` passed skill integrity, strict typecheck, lint, **658/658 unit tests across 12 files**, zero skipped (55.61s), and production build (3.14s). The 36 new streaming tests cover exact pull counts for LIMIT/OFFSET (including zero/negative/exhausted bounds), projection/aliases, empty/missing keys, DML/index recreation, residual filtering, fallback, DISTINCT, sorting, grouping/HAVING/aggregates, actual cursor cleanup, invalidation, stale references and closed-operator reuse. Existing physical-use tests now spy on B+tree cursor traversal and reject calls to the eager lookup API. All previous tests, including 1,000 seeded auto/scan/SQLite comparisons, remain active.
+
+Focused commands: `npx vitest run tests/indexed-select.test.ts tests/indexed-select-differential.test.ts` passed 111/111; the new suite passed 36/36 after correction. One new GROUP BY/LIMIT comparison initially assumed SQLite's unspecified group order matched P0; adding explicit ORDER BY made the cross-engine assertion valid. VELA already matched its scan reference. Initial test typecheck and cleanup lint findings were corrected before final verification; no lint rules disabled and no failing/skipped tests hidden.
+
+The new 19 SQL cases compare complete results with forced scans and SQLite; DML cases also verify both references after mutation/index recreation. Instrumented cursor generators count actual yielded entries and verify finalization on LIMIT, exhaustion, errors and invalidation. Blocking queries consume all matching input; DISTINCT consumes enough distinct output, not merely LIMIT raw entries. No SQL eligibility/storage/DML/UI expansion is included.
+
+Final release gates ran sequentially without application/config changes: production **66/66** (1.3m), zero skipped/flaky/unexpected cases; curated **100/100**; fuzz **5000/5000**, seed 355866, zero mismatches. Production includes 360/768/1100/1440 layouts and startup console checks. `npm run benchmark:streaming` passed at 1k/10k/100k against the exact predecessor/current scan. Its initial serializer duplicated all mode samples under each mode; after correcting serialization, typecheck/lint and the benchmark were rerun. Engine/tests/build remained unchanged, so their valid results were retained. This scoped duplicate-key harness replaces unrelated original point/join benchmark reruns. Evidence and hashes: `evidence/p1c1-verification.json`; raw logs: `artifacts/p1c1-*`. No subagents/new skills/dependencies were used.
+
 ## P1B-2B verification
 
 `npm run verify` passed skill integrity (eight entrypoints and one license), strict typecheck, lint, **622/622 unit tests across 11 files, zero skipped** (60.03s), and production build (3.38s). The 111 additions are 106 binding/eligibility/lifecycle/physical-execution tests and five seeded differential tests. The final focused run passed 159/159 across indexed SELECT, differential and index-maintenance files. An initial lint error (`no-this-alias`) was corrected with lexical closures before these final gates; no rule was disabled.

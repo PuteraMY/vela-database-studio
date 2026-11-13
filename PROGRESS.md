@@ -1,6 +1,6 @@
 # Progress
 
-Current milestone: P1B-2B safe indexed equality SELECT on `feat/vela-p1b2b-indexed-select`, based on verified P1B-2A commit `8744b46b188664b1a88925764a35064da147dc84`. Implementation and local release verification are complete; the GitHub checkpoint uses the existing feature branch. The stacked PR targets P1B-2A; preserve PRs #1–#3 and main.
+Current milestone: P1C-1 streaming indexed equality on `feat/vela-p1c1-streaming-index`, based on verified P1B-2B commit `f39ff56d8961ac556e953ecf80cff328c5721cd7`. Implementation and all local release gates are complete. The stacked PR targets P1B-2B; preserve PRs #1–#4 and main.
 
 | Tier | Status | Verified boundary |
 | --- | --- | --- |
@@ -9,11 +9,19 @@ Current milestone: P1B-2B safe indexed equality SELECT on `feat/vela-p1b2b-index
 | P1B-1 — SQL index maintenance | Implemented and locally verified | Stable IDs, normalized SQL keys, real catalog trees, atomic DML and consistency diagnostics. |
 | P1B-2A — internal index reads | Implemented and locally verified | Lifetime-scoped handles, stable-ID directory resolution, actual B+tree exact/range reads and fail-fast cursors. |
 | P1B-2B — safe indexed SELECT | Implemented and locally verified | Single-column equality, original predicate, deterministic selection, truthful trace and P0 fallback. |
+| P1C-1 — streaming equality | Implemented and locally verified | Existing exact cursor, downstream LIMIT/OFFSET, accurate consumed-entry trace and recursive cleanup. |
 | Remaining P1 | Not started | No optimizer/statistics, estimated EXPLAIN, indexed joins or tree visualizer. |
 | P2 — transactions, WAL, MVCC | Not started | Snippet IndexedDB storage is not database persistence. Transaction commands are rejected. |
 | P3 — advanced SQL | Not started | No subqueries, CTEs, set operations or windows. Fuzz/benchmark tooling is available for P0. |
 
-## P1B-2B verified checkpoint
+## P1C-1 verified checkpoint
+
+- Streams the existing exact cursor through original WHERE/downstream operators. LIMIT/OFFSET and DISTINCT control demand; blocking operators consume required input. Recursive cleanup prevents cursor leaks and unsafe operator reuse.
+- Skills/typecheck/lint/build passed; **658/658** units (36 new), **66/66** production browser, **100/100** curated and **5000/5000** fuzz passed. Existing 1,000 seeded SQL comparisons remain active. No skipped/flaky final tests.
+- `npm run benchmark:streaming` passed predecessor/current/scan assertions with two warmups/nine rotated samples. 100k duplicate LIMIT 1: **17.626 ms before / 0.257 ms streaming / 0.113 ms scan**. Validated entries fall from 10,000 eagerly collected references to one consumed entry.
+- Samples, caveats and exact sources are recorded under `evidence/p1c1-*` and BENCHMARK.md. Work alone; no new service/dependency/skill, merge/deployment or P1C-2 work. New branch targets P1B-2B; PRs #1–#4/main preserved. Remote CI is reported separately on the PR.
+
+## P1B-2B verified checkpoint (historical)
 
 - `npm run verify`: skills integrity, typecheck, lint, **622/622** unit tests (60.03s), build passed. Includes **1,000** seeded auto/forced-scan/SQLite comparisons and physical B+tree execution proof.
 - Production browser: **66 distinct passing cases** = 62 retained passes plus four corrected new cases (9.8s). Initial four failures were new-test `img` locators against the existing `group` role; no application change. Typecheck/lint passed again after the test-only correction. Valid expensive core/build/browser results were reused after interruption.

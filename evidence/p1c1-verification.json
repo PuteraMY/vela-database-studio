@@ -1,0 +1,126 @@
+{
+  "milestone": "P1C-1",
+  "baseCommit": "f39ff56d8961ac556e953ecf80cff328c5721cd7",
+  "branch": "feat/vela-p1c1-streaming-index",
+  "prBase": "feat/vela-p1b2b-indexed-select",
+  "verifiedAt": "2026-11-13T07:52:17.705Z",
+  "commands": {
+    "npm run verify": {
+      "exitCode": 0,
+      "skills": "8 entrypoints + 1 license passed",
+      "typecheck": "passed",
+      "lint": "passed",
+      "unitPassed": 658,
+      "unitSkipped": 0,
+      "unitFiles": 12,
+      "unitSeconds": 55.61,
+      "buildSeconds": 3.14
+    },
+    "npx vitest run tests/streaming-index.test.ts": {
+      "exitCode": 0,
+      "passed": 36,
+      "seconds": 3.94
+    },
+    "npm run test:production": {
+      "exitCode": 0,
+      "startTime": "2026-11-13T07:46:22.977Z",
+      "duration": 78472.879,
+      "expected": 66,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "npm run curated": {
+      "exitCode": 0,
+      "command": "npm run curated",
+      "total": 100,
+      "passed": 100,
+      "failed": 0,
+      "matchRate": 1,
+      "comparison": "Both SQLite and VELA results must match the hand-written expected rows exactly; column labels are excluded.",
+      "failures": []
+    },
+    "npm run fuzz": {
+      "exitCode": 0,
+      "total": 5000,
+      "matched": 5000,
+      "mismatches": 0,
+      "matchRate": 1,
+      "seed": 355866,
+      "schemaCount": 25
+    },
+    "npm run typecheck && npm run lint": {
+      "exitCode": 0,
+      "reason": "Rechecked after benchmark serializer correction; engine/test/build sources unchanged"
+    },
+    "npm run benchmark:streaming": {
+      "exitCode": 0,
+      "sourceChangedDuringRun": false,
+      "report": "evidence/p1c1-streaming-benchmark.json"
+    },
+    "git diff --check": {
+      "exitCode": 0
+    }
+  },
+  "correctedFindings": [
+    "GROUP BY/LIMIT SQLite assertion needed ORDER BY; VELA already matched scan",
+    "Initial new-test optional access typecheck and cleanup lint corrected",
+    "Benchmark serializer stored all mode samples under each mode; corrected and benchmark rerun, timings/assertions unchanged"
+  ],
+  "physicalProof": "Real B+tree cursor yield counts; no eager lookup; finalization on LIMIT/exhaustion/error/invalidation; residual WHERE and OFFSET precede qualifying output counts",
+  "sqlDifferential": "Existing 1000 seeded three-way cases, 19 new streaming SQL cases and DML/index recreation comparisons; curated/fuzz cover P0 separately",
+  "hardware": {
+    "platform": "linux",
+    "release": "6.18.57",
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "visibleCpus": 3,
+    "parallelism": 2,
+    "node": "v24.22.1",
+    "cpuQuota": "200000 100000",
+    "memoryLimit": "8589934592"
+  },
+  "engineSourceHash": "f4063522aba1bd320585499eaba92e5e31205a26b40b9c2cc02a7d9495467fd4",
+  "fileSha256": {
+    "package.json": "70d109c079d5794dd21c2c76291693a7e8f435cca1790443a8b5361766fc1abb",
+    "src/engine/csv.ts": "6969a84959c4687428a711e9d51b50335fda1fa238f82a9eda149d419082fe60",
+    "src/engine/database.ts": "3deaa0deff378db35759f79f086bcb844c62325ae1e75fd6ef77647a114dc48f",
+    "src/engine/datasets.ts": "9c785e7536199bae6bfb1014b3d4042196fc088caa4957df0929e7b16e07f6fa",
+    "src/engine/equality-access.ts": "3b64502112d26d75d5a8fe21f4e9a10b220b5db2a124c17b74fba8e250ed25bd",
+    "src/engine/expression.ts": "1ad0944a313a7bcc2cab8c200bc4878f3bde0968c1b2c4fcc6d461efe79563a3",
+    "src/engine/index-reader.ts": "f145f9af6b8e6eee1868c7ed6ac7e56679c960d44233e729435e0fd9a88161b1",
+    "src/engine/indexes.ts": "f02a4213268d9336bb2d61583af87251c5b5858d4bf8f2e432cda77b141a6fe7",
+    "src/engine/iterator.ts": "2042be66eb26e826fdc46d065a969d44d44a85fd7966a8d06438e513d4432db5",
+    "src/engine/like.ts": "c60e3eb6c8b62093e1849472848f6592f25d743cc3d1323c05e33cec31a8497f",
+    "src/engine/parser.ts": "8939744c9c35bc273a58c10ab4afcefe7d4b328e5af4326f0d61d083dcf9a56b",
+    "src/engine/storage/btree.ts": "c29d0ba1bcab63169f54ed0a94b434b66461294aef9b27ca250c69638e11c62f",
+    "src/engine/storage/codec.ts": "db83e64fe6260154299e6c4b8a21bc5597ab51713388be17146e99be80bdc945",
+    "src/engine/storage/cursor.ts": "97a4d0f7c5080d40272f13d8db8eea7932737b0c75badfcaf6379d8fab2bb045",
+    "src/engine/storage/invariants.ts": "027e5b86905324b11676c1ccd0a83852715c44a5251977a8f6a97172f5788a91",
+    "src/engine/storage/page.ts": "4e4d2f7374bfb3a0c877fa097c9ed8660e4b9517b55f403714fda9e44aa70777",
+    "src/engine/storage/pager.ts": "31c73b78077fa3526f815af03dbe9313ceb5e5a22e59795a24399236c27299fb",
+    "src/engine/storage/table-index.ts": "a85a7f4f2a00da1bcc82007efc694af8dc2ea8cd6f219a975fedcfc40d612267",
+    "src/engine/tokenizer.ts": "656a2ca93c21ac5b64f53548757324ae09c1c0cb62132e131844d88ca34d80bb",
+    "src/engine/types.ts": "f2ca1cf7ca3ae9db61379fea8b2c5dad64cb7d81e8d4bb4a609fafb209125c60",
+    "tests/indexed-select.test.ts": "cdb3bf9762f084f481ca56d965b3b21cb38adfa1275cf0c94b6c5453687a3d42",
+    "tests/streaming-index.test.ts": "ad3738bdba1d6533fd3fa06f82f3ed8cb3aa4e5c28f602ab2aa1ef7bffa5687e",
+    "tools/benchmark-indexed-select.ts": "fc18bcecdb2548f4c4fb2da28c17245dd55e39d8fa16aea935c10bbe8fe91f0a",
+    "tools/benchmark-streaming-index.ts": "8e552a04c8e4b9f3c9680cb974bf97b0a1dc9fa2e2cfa4f680104c2c34795023"
+  },
+  "unchanged": [
+    "eligibility/binder/evaluator",
+    "P1A storage",
+    "DML/index maintenance/read APIs",
+    "Worker protocol/UI",
+    "dependencies/lockfile",
+    "CI config"
+  ],
+  "limits": [
+    "Existing single-table one-column equality only",
+    "Blocking operators consume required full input",
+    "Early-match scan can still be faster",
+    "Fail-fast cursors, not MVCC",
+    "No P1C-2/P2/P3"
+  ],
+  "delegations": [],
+  "remoteCi": "Local evidence; remote status reported separately on stacked PR."
+}

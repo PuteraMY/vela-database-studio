@@ -206,7 +206,7 @@ const report = {
     caveats: [
       "Shared Node host, warmed repeated keys, no concurrent DML; not a browser or production latency guarantee.",
       "Nine-sample nearest-rank p95 is the maximum; do not interpret it as a field tail-latency estimate.",
-      "Exact lookup validates/materializes all matching references, including with LIMIT 1. Trace match counts distinguish this from emitted rows.",
+      "Indexed equality streams validated rows; downstream LIMIT may stop early. Trace match counts measure consumed entries, not total key cardinality. ORDER BY and aggregates still consume all required rows.",
       "LIMIT without ORDER BY verifies the existing stable source order; SQL generally does not guarantee unordered result order.",
     ],
   },
