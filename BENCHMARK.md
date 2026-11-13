@@ -1,6 +1,36 @@
 # Measured performance
 
-## P1B-2A measurements (2026-11-13)
+## P1B-2B SQL measurements (2026-11-13)
+
+`npm run benchmark` completed both asserted harnesses sequentially, with no browser suite/build running concurrently. [Paired SQL evidence](evidence/p1b2b-indexed-sql-benchmark.json) retains all wall samples, min/max, median/p95, source timing and actual access evidence; full raw samples remain in `artifacts/benchmark-indexed-select.json`. [Original scan/join regression](evidence/p1b2b-scan-benchmark.json) retains its samples. Each harness checked unchanged engine source hashes before/after. Measurements precede the feature commit; file hashes in `p1b2b-verification.json` identify the actual measured working tree.
+
+Hardware: Linux 6.18.57 x64, Intel Xeon Platinum 8573C, Node 24.22.1; three visible logical CPUs, available parallelism two, two-core CPU quota, 8 GiB memory limit. These warmed shared-host Node results are not browser/Worker-transfer/production latency guarantees.
+
+Paired fixtures contain 1k/10k/100k rows with identical rows and three explicit indexes in auto and forced-scan databases. ID is unique; small_key groups four IDs; broad_key selects 10% of rows. Two warmups and nine measured executions per mode/workload, alternating mode order. Timings include parsing, binding, access selection, lookup/scan, row resolution/qualification, original WHERE, projection, ordering/limit and result materialization. Fixture/restore/index creation, invariant checks and complete-result assertions are outside the timer. Every run checks expected values and actual source kind; index lookup count is one. Source time includes lookup/validation/resolution/qualification together, not isolated resolver overhead. With nine samples, nearest-rank p95 equals the maximum; it is not a field tail-latency estimate.
+
+| Rows | Workload | Index median / p95 (ms) | Scan median / p95 (ms) |
+| ---: | --- | ---: | ---: |
+| 1,000 | existing unique key | 0.318 / 4.916 | 7.874 / 15.122 |
+| 1,000 | missing unique key | 0.137 / 2.678 | 2.253 / 6.753 |
+| 1,000 | four non-unique matches | 0.208 / 0.392 | 2.014 / 2.722 |
+| 1,000 | ten-percent matches | 0.902 / 3.751 | 2.864 / 9.898 |
+| 1,000 | ten-percent key with LIMIT 1 | 0.251 / 3.291 | 0.062 / 1.576 |
+| 10,000 | existing unique key | 0.264 / 0.714 | 16.647 / 19.687 |
+| 10,000 | missing unique key | 0.212 / 0.403 | 16.727 / 17.478 |
+| 10,000 | four non-unique matches | 0.292 / 0.415 | 16.730 / 17.616 |
+| 10,000 | ten-percent matches | 5.474 / 6.547 | 18.429 / 20.346 |
+| 10,000 | ten-percent key with LIMIT 1 | 1.997 / 3.367 | 0.094 / 0.209 |
+| 100,000 | existing unique key | 0.398 / 0.526 | 179.092 / 184.915 |
+| 100,000 | missing unique key | 0.355 / 0.440 | 181.356 / 191.818 |
+| 100,000 | four non-unique matches | 0.390 / 0.882 | 180.932 / 224.499 |
+| 100,000 | ten-percent matches | 61.267 / 68.525 | 206.280 / 216.771 |
+| 100,000 | ten-percent key with LIMIT 1 | 20.554 / 38.916 | 0.135 / 0.365 |
+
+At 100k rows, unique indexed SQL meets the <5 ms point target for this fixture. The 10k-match LIMIT 1 workload is substantially **slower** through the index: exact lookup eagerly validates/materializes all 10k references, then emits one row; the reference scan can stop after four rows. The same reversal exists at 1k and 10k. No cost heuristic was added. Unordered LIMIT preserves existing source behavior in this fixture, not a general SQL ordering guarantee.
+
+The separate original fixture declares PRIMARY KEY constraints without explicit indexes, so it still scans: point 153.545 ms, aggregate 208.227 ms, 100k materialization 344.658 ms, and 100k × 100 nested-loop join 4054.520 ms medians. Aggregate meets 1 s; indexed join remains unimplemented and the measured nested loop misses 1 s. Do not compare internal P1B-2A lookup timings with these end-to-end SQL timings to claim a speedup.
+
+## P1B-2A measurements (historical, 2026-11-13)
 
 After resuming the unchanged, verified implementation, ran `npx tsx tools/benchmark-index-read.ts` and `npm run benchmark`. Raw samples: [internal reads](evidence/p1b2a-index-benchmark.json) and [SQL regression](evidence/p1b2a-benchmark.json). Both commands completed their correctness assertions and recorded matching source hashes at start/end. Hardware: Linux 6.18.57 x64, Intel Xeon Platinum 8573C, Node 24.22.1; 3 visible CPUs, available parallelism 2, 2-core CPU quota, 8 GiB memory limit.
 

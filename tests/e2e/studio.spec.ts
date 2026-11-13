@@ -110,6 +110,52 @@ test("rejects unavailable transaction syntax instead of simulating it", async ({
   await run(page, "SELECT COUNT(*) FROM pelajar;");
   await expect(page.getByRole("table")).toContainText("120");
 });
+test("executes indexed equality through the Worker and displays its actual trace", async ({
+  page,
+}) => {
+  await run(
+    page,
+    "CREATE TABLE uji_indeks(id INTEGER PRIMARY KEY,k INTEGER,nama TEXT); INSERT INTO uji_indeks VALUES(1,7,'Satu'),(2,7,'Dua'),(3,NULL,'Kosong'); CREATE INDEX ix_uji ON uji_indeks(k); SELECT id,nama FROM uji_indeks WHERE k=7 ORDER BY id;",
+  );
+  await showResults(page);
+  await expect(page.locator("tbody tr")).toHaveCount(2);
+  await expect(page.getByRole("table")).toContainText("Dua");
+  await showPlan(page);
+  const graph = page.getByRole("group", { name: /Pelan pelaksanaan:/ });
+  await expect(graph).toHaveAttribute("aria-label", /Carian indeks/);
+  await expect(graph).not.toHaveAttribute("aria-label", /Imbasan jadual/);
+  await run(
+    page,
+    "UPDATE uji_indeks SET k=9 WHERE id=1; DELETE FROM uji_indeks WHERE id=2; INSERT INTO uji_indeks VALUES(4,7,'Empat'); SELECT id,nama FROM uji_indeks WHERE 7=k;",
+  );
+  await showResults(page);
+  await expect(page.locator("tbody tr")).toHaveCount(1);
+  await expect(page.getByRole("table")).toContainText("Empat");
+  await showPlan(page);
+  await expect(graph).toHaveAttribute("aria-label", /Carian indeks/);
+});
+test("shows table-scan fallback for NULL predicates and dropped indexes", async ({
+  page,
+}) => {
+  await run(
+    page,
+    "CREATE TABLE uji_fallback(id INTEGER,k INTEGER); INSERT INTO uji_fallback VALUES(1,7),(2,NULL); CREATE INDEX ix_fallback ON uji_fallback(k); SELECT id FROM uji_fallback WHERE k IS NULL;",
+  );
+  await showResults(page);
+  await expect(page.locator("tbody td").nth(1)).toHaveText("2");
+  await showPlan(page);
+  const graph = page.getByRole("group", { name: /Pelan pelaksanaan:/ });
+  await expect(graph).toHaveAttribute("aria-label", /Imbasan jadual/);
+  await expect(graph).not.toHaveAttribute("aria-label", /Carian indeks/);
+  await run(
+    page,
+    "DROP INDEX ix_fallback; SELECT id FROM uji_fallback WHERE k=7;",
+  );
+  await showResults(page);
+  await expect(page.locator("tbody td").nth(1)).toHaveText("1");
+  await showPlan(page);
+  await expect(graph).toHaveAttribute("aria-label", /Imbasan jadual/);
+});
 test("switches between all three datasets", async ({ page }) => {
   await page.getByLabel("Set data", { exact: true }).selectOption("kedai");
   await showResults(page);

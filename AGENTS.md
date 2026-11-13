@@ -4,7 +4,7 @@
 
 Work alone. Complete and verify P0 (engine + studio) before P1 (pages, B+tree, optimizer), then P2 (transactions, WAL, MVCC), then P3 (advanced SQL). Never represent a placeholder as a completed feature. Record scope decisions in DECISIONS.md and commands/results in PROGRESS.md and TESTING.md. Commit each completed tier or major feature.
 
-Current authorized milestone: P1B-2A only, on `feat/vela-p1b2a-index-read-path`, based on verified P1B-1 commit `77bfc1b264392cd5320ca5a52e413972570a2d6f`. Add an internal stable-ID resolver, exact-key lookup and ordered index cursor, with ownership/lifetime checks and reproducible tests. Preserve the active P0 SELECT path, EXPLAIN, UI and P1A storage implementation. Stop after verification and a stacked PR targeting `feat/vela-p1b1-index-maintenance`; leave PR #1, PR #2 and their branches unchanged. Do not merge, rebase, force-push, deploy or begin planner integration, optimization, WAL, MVCC or advanced SQL. No subagents.
+Current authorized milestone: P1B-2B only, on `feat/vela-p1b2b-indexed-select`, based on verified P1B-2A commit `8744b46b188664b1a88925764a35064da147dc84`. Execute safe single-table, single-column equality SELECT through real B+trees after binding, retain the original WHERE filter and P0 scan fallback, and record actual access evidence. Preserve existing storage, DML, Worker protocol and UI. Stop after verification and a stacked PR targeting `feat/vela-p1b2a-index-read-path`; preserve PR #1–#3 and their branches. No merge, rebase, force-push, deployment, cost optimizer, range/join planning, WAL, MVCC or advanced SQL. No subagents.
 
 ## Stack and commands
 

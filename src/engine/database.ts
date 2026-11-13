@@ -1,4 +1,5 @@
 import { parse } from "./parser";
+import { chooseEqualityAccess, type SelectAccessMode } from "./equality-access";
 import {
   IndexReadPath,
   type IndexHandle,
@@ -32,11 +33,13 @@ import {
 import { Operator, type Frame } from "./iterator";
 import {
   SqlError,
+  type AccessTrace,
   type DatabaseState,
   type Expr,
   type QueryResult,
   type Row,
   type SchemaTable,
+  type ScanReason,
   type Select,
   type Source,
   type Statement,
@@ -45,14 +48,21 @@ import {
 } from "./types";
 const qualified = (row: Row, alias: string): Row =>
   Object.fromEntries(Object.entries(row).map(([k, v]) => [`${alias}.${k}`, v]));
+export interface DatabaseOptions {
+  indexStorage?: TreeOptions;
+  /** Internal reference mode; never exposed as SQL syntax or a studio toggle. */
+  selectAccess?: SelectAccessMode;
+}
 export class Database {
   private state: DatabaseState = { tables: [], indexes: [] };
   private identities: RowIdentities = new Map();
   private indexes: PhysicalIndexes = new Map();
   private readonly reads = new IndexReadPath();
   private readonly indexStorage?: TreeOptions;
+  private readonly selectAccess: SelectAccessMode;
   /** Optional fixed page limits support bounded hosts and deterministic failure tests. */
-  constructor(options: { indexStorage?: TreeOptions } = {}) {
+  constructor(options: DatabaseOptions = {}) {
+    this.selectAccess = options.selectAccess ?? "auto";
     this.indexStorage = options.indexStorage
       ? Object.freeze({ ...options.indexStorage })
       : undefined;
@@ -107,7 +117,7 @@ export class Database {
     this.reads.validate(this.state, this.identities, this.indexes);
     return result;
   }
-  /** Internal read APIs only; SELECT continues through the P0 executor. */
+  /** Internal read APIs, also used by the narrowly eligible SELECT source. */
   tableHandle(name: string) {
     return this.reads.tableHandle(name);
   }
@@ -548,9 +558,9 @@ export class Database {
       orderExpressions.some(hasAggregate)
     )
       throw new SqlError("Agregat ORDER BY memerlukan pertanyaan agregat.");
-    const scan = (s: Source) => {
+    const scan = (s: Source, reason: ScanReason) => {
       const table = this.table(s.table);
-      return op(
+      const source = op(
         "Imbasan jadual",
         `${s.table} · ${table.rows.length} baris`,
         [],
@@ -558,15 +568,55 @@ export class Database {
           for (const row of table.rows) yield { row: qualified(row, s.alias) };
         },
       );
+      source.trace.access = { kind: "table-scan", table: s.table, reason };
+      return source;
     };
-    let current = q.from
-      ? scan(q.from)
-      : op("Nilai tetap", "Satu baris", [], function* () {
+    const baseSource = () => {
+      if (!q.from)
+        return op("Nilai tetap", "Satu baris", [], function* () {
           yield { row: {} };
         });
+      const s = q.from;
+      const access = chooseEqualityAccess(
+        q,
+        this.table(s.table).columns,
+        this.state.indexes,
+        this.indexes,
+        this.selectAccess,
+      );
+      if (access.kind === "table-scan") return scan(s, access.reason);
+      const lookup = () =>
+        this.lookupIndex(
+          this.indexHandle(this.tableHandle(s.table), access.index),
+          access.key,
+        );
+      const resolve = (reference: RowReference) =>
+        qualified(this.resolveRow(reference), s.alias);
+      const evidence: Extract<AccessTrace, { kind: "index-equality" }> = {
+        kind: "index-equality",
+        table: s.table,
+        index: access.index,
+        lookupCalls: 0,
+        matchedRowIds: 0,
+      };
+      const source = op(
+        "Carian indeks",
+        `${s.table} · ${access.index} · padanan tepat`,
+        [],
+        function* () {
+          evidence.lookupCalls++;
+          const references = lookup();
+          evidence.matchedRowIds = references.length;
+          for (const reference of references) yield { row: resolve(reference) };
+        },
+      );
+      source.trace.access = evidence;
+      return source;
+    };
+    let current = baseSource();
     for (const join of q.joins) {
       const left = current,
-        right = scan(join.source);
+        right = scan(join.source, "multiple-tables");
       if (join.on) this.bind(join.on, sample, false, realColumns);
       const nullRow = sourceSample(join.source);
       current = op(

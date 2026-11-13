@@ -1,12 +1,22 @@
 # VELA delivery and skills integration report
 
-Verification finalized on 2026-11-13. **P0, P1A and P1B-1 are verified; P1B-2A now provides internal B+tree reads and stable-ID resolution. SELECT index access/optimization, P2 and P3 remain unimplemented. The full original project is not finished.**
+Verification finalized on 2026-11-13. **P0 through P1B-2B are locally verified. Safe single-table equality SELECT now uses explicit B+trees; other queries retain P0 scans. General optimization, P2 and P3 remain unimplemented. The full original project is not finished.**
 
-## P1B-2A internal read checkpoint
+## P1B-2B SQL execution checkpoint
+
+Added post-binding eligibility and a source operator using the real B+tree exact lookup and stable-ID resolver. Supported predicates are a complete direct-column `=`/`==` comparison with a compatible literal/arithmetic/allowlisted pure-function constant, in either operand order, on one base table and an explicit single-column index. The original WHERE and downstream pipeline remain active. NULL equality, mixed types, unsafe constants, composite predicates, AND/OR, ranges and joins use the authoritative scan path; unsupported syntax still errors. Multiple indexes use deterministic name ordering, not a cost model.
+
+Verification: **622/622 unit tests**, including **1,000 three-way indexed/scan/SQLite comparisons**; skills/typecheck/lint/build pass. All **66 distinct browser cases** have passing evidence: 62 passed initially and four new cases passed after correcting test-only locator roles. Initial failures are retained and explained in TESTING.md. Curated **100/100**, fuzzer **5000/5000**, zero mismatches. Physical-call instrumentation, residual filtering and actual trace counts prove index execution; LIMIT 0 performs zero lookups. Existing EXPLAIN ANALYZE displays actual source operators without estimated costs.
+
+SQL benchmark at 100k rows: unique-key median **0.398 ms indexed vs 179.092 ms forced scan**. Common-key LIMIT 1 is slower: **20.554 vs 0.135 ms**, because exact lookup validates all 10k references before yielding. This is an explicit limitation, not concealed by a heuristic. Memory-only storage, strict P0 type semantics, no automatic PRIMARY KEY index, cost/range/join planning or new UI. P1A storage, catalog/DML/read implementation, binder/evaluator, Worker protocol and dependencies are preserved.
+
+Branch `feat/vela-p1b2b-indexed-select` starts at verified `8744b46b188664b1a88925764a35064da147dc84`; stacked review targets `feat/vela-p1b2a-index-read-path`. PRs #1–#3/main remain unchanged. No subagents or new skills were used; existing local skill integrity passed. No merge/deployment. Reproducible evidence: `evidence/p1b2b-verification.json` and SQL benchmark reports. Remote CI status is separate from these local checks and reported with the PR.
+
+## P1B-2A internal read checkpoint (historical)
 
 `IndexReadPath` resolves P1B-1 IDs through per-table directories and performs exact/range reads through real B+trees. Frozen table/index handles enforce database ownership and object lifetimes. Ordinary UPDATE retains references; deleted rows fail resolution; DROP/recreation and logical restore invalidate old handles. Every returned index entry is checked against the current row. Cursors stream in both directions, support inclusive/exclusive lexicographic bounds and release their physical iterator on completion, cancellation or error. Any successful publication invalidates open cursors; failed statements preserve them.
 
-Local core gates pass: skills integrity, typecheck, lint, **511/511 unit tests (68 new)** and build. New tests include 900 deterministic reference-model steps, no-scan instrumentation, cleanup assertions and ten targeted SQL/SQLite comparisons. The interrupted session had also completed 62/62 production-browser tests; those valid results and the core gate were preserved without rerunning. Resumed curated checks matched 100/100 and fuzz matched 5000/5000 (seed 355866). Internal 100k-row medians were 0.072104 ms for exact lookup plus four-row resolution and 0.115886 ms for a 40-row range. These are internal measurements, not SELECT speedups. Full evidence, hardware and methodology are in TESTING.md, PROGRESS.md and BENCHMARK.md. This milestone used no subagents, new dependencies or skill loads; project-local skills remain unchanged and integrity-checked.
+Local core gates pass: skills integrity, typecheck, lint, **622/622 unit tests (68 new)** and build. New tests include 900 deterministic reference-model steps, no-scan instrumentation, cleanup assertions and ten targeted SQL/SQLite comparisons. The interrupted session had also completed 62/62 production-browser tests; those valid results and the core gate were preserved without rerunning. Resumed curated checks matched 100/100 and fuzz matched 5000/5000 (seed 355866). Internal 100k-row medians were 0.072104 ms for exact lookup plus four-row resolution and 0.115886 ms for a 40-row range. These are internal measurements, not SELECT speedups. Full evidence, hardware and methodology are in TESTING.md, PROGRESS.md and BENCHMARK.md. This milestone used no subagents, new dependencies or skill loads; project-local skills remain unchanged and integrity-checked.
 
 Limits: memory only; read handles stay within one Database instance and cannot be durable/Worker-protocol references. Directory rebuilding adds O(total rows) publication work and O(total rows) memory; individual resolution does not scan. Exact keys require full arity and must fit current slots; partial range bounds are ordinary lexicographic keys, not wildcard prefixes. Raw NULL lookup is not SQL equality. There is no snapshot isolation, SELECT index operator, optimizer or UI change.
 
@@ -53,7 +63,7 @@ All eight requested entries were accessed through the GitHub connector, read in 
 
 ## Completed scope
 
-P0 provides a dependency-free handwritten SQL tokenizer/parser, typed AST, three-valued NULL logic, table/constraint and index-catalog DDL, atomic DML, expressions/aggregates/grouping, up to four joined tables and pull-based execution traces. SQL runs in a Web Worker. P1B-1 subsequently connects explicit catalog definitions to physical trees; SELECT remains unchanged.
+P0 provides a dependency-free handwritten SQL tokenizer/parser, typed AST, three-valued NULL logic, table/constraint and index-catalog DDL, atomic DML, expressions/aggregates/grouping, up to four joined tables and pull-based execution traces. SQL runs in a Web Worker. P1B-1 subsequently connects explicit catalog definitions to physical trees; P1B-2B adds the bounded SQL access path described above.
 
 The studio includes the responsive schema/editor/results/inspector layout, real operator graph replay, latency metrics, virtualized results, sorted exports, local SQLite comparison with cell diffs, three datasets, CSV import, dataset generation, IndexedDB snippets, history, command palette and three checked P0 lessons. B-tree/transaction panels and later lessons explicitly state their unavailable status.
 
@@ -63,14 +73,14 @@ This continuation corrected virtual-spacer paint/layout shifts, graph clipping, 
 
 | Executed command/check | Result |
 | --- | --- |
-| `npm run verify` | Skill integrity, strict typecheck, lint, 511/511 unit tests and production build passed; no emitted warnings/errors. |
-| `npm run test:production` | 62/62 actual-browser tests passed on desktop/mobile; zero skipped/flaky/unexpected tests. |
+| `npm run verify` | Skill integrity, strict typecheck, lint, 622/622 unit tests and production build passed; no emitted warnings/errors. |
+| `npm run test:production` | 66 distinct desktop/mobile cases have passing evidence (62 retained + four corrected tests); initial four locator failures documented, zero skipped/flaky cases. |
 | `npm run curated` | 100/100 hand-written expected result sets verified in VELA and SQLite. |
 | `npm run fuzz` | 5,000/5,000 matched (100%), seed 355866, 25 randomized schemas, 20 P0 query categories. |
-| `npm audit --json` | Zero final known advisory findings; initial audit had 2 critical and 8 moderate. |
-| `npx tsx tools/inspect-ui.ts` | 360/390/768/1100/1440 layouts have no document/body horizontal overflow; no collected page/console errors or warnings. |
-| `npx tsx tools/browser-profile.ts` | Real production Worker/result/scroll measurements, zero collected errors; limitations below. |
-| `npm run benchmark` | Assertions passed, measured source hash unchanged; two of three requested performance targets remain unmet. |
+| `npm audit --json` (historical P0) | Zero known advisory findings at that run; initial audit had 2 critical and 8 moderate. |
+| `npx tsx tools/inspect-ui.ts` (historical P0) | 360/390/768/1100/1440 layouts have no document/body horizontal overflow; no collected page/console errors or warnings. |
+| `npx tsx tools/browser-profile.ts` (historical P0) | Real production Worker/result/scroll measurements, zero collected errors; limitations below. |
+| `npm run benchmark` | Assertions passed, measured source hash unchanged; indexed equality and aggregate targets met on measured fixtures; indexed joins remain absent. |
 
 The fuzzer's initial match rate was **98.44% (4,922/5,000)**. All 78 observed mismatches were fixed: REAL division 40, Unicode LIKE 20, SUBSTR bounds 13, boolean IS predicates 5. The final run has no unresolved mismatches **within its generated subset**. It excludes P3 subqueries, CTEs, set operations/windows and P1/P2 systems. Unsupported probes are recorded separately, never counted as matching errors. Ordered cell comparison uses a 1e-10 floating tolerance and excludes labels. This is not universal SQLite compatibility: strict stored types, JavaScript numeric limits and limited date formats intentionally differ. The comparison UI test demonstrates one known unsupported `%j` date format instead of concealing it.
 
@@ -82,9 +92,9 @@ The final Node benchmark used 100k fact rows and 100 dimension rows on Intel Xeo
 
 | Requested workload | Measured median | Status |
 | --- | ---: | --- |
-| Indexed point lookup <5 ms | 162.082 ms using a full scan | Not met; index access absent |
-| Two-table indexed join <1 s | 4,180.548 ms using nested loops | Not met; indexed join absent |
-| Aggregate scan <1 s | 224.059 ms | Met for the measured fixture |
+| Indexed equality SELECT <5 ms | 0.398 ms with explicit unique index | Met on paired 100k fixture |
+| Two-table indexed join <1 s | 4054.520 ms using nested loops | Not met; indexed join absent |
+| Aggregate scan <1 s | 208.227 ms | Met for the measured fixture |
 
 Production-browser p95 sampled frame intervals were 16.7/16.7ms at desktop/mobile widths; maxima were 50.0/33.4ms, so uninterrupted 60fps is not claimed. Initial CLS was 0.0041/0.0061. After investigating empty spacer-row paint, scripted-scroll CLS improved from 10.62/32.82 to 0.0065/0.0061. Both browser tests enforce the scroll-shift bound and final-row visibility; before/after evidence is retained. There are no field INP measurements, repeated real-device studies or 500k stress claims.
 
@@ -102,18 +112,18 @@ Playwright tests, security changes, UI implementation and final documents were r
 
 ## Limitations and next ordered milestone
 
-- **P1 incomplete:** P1A pages/B+tree, P1B-1 maintenance and P1B-2A internal reads are implemented; SELECT index access, page-read reporting in the studio, statistics/ANALYZE, optimizer transformations/costing, join selection/reordering, estimated EXPLAIN and the tree visualizer remain absent. `EXPLAIN ANALYZE` only exposes actual P0 operators with inclusive times.
+- **P1 incomplete:** P1A pages/B+tree, P1B-1 maintenance, P1B-2A internal reads and P1B-2B bounded equality execution are implemented; broader index access, page-read reporting in the studio, statistics/ANALYZE, optimizer transformations/costing, join selection/reordering, estimated EXPLAIN and the tree visualizer remain absent. `EXPLAIN ANALYZE` exposes actual scan/index source operators with inclusive times, without estimates.
 - **P2 absent:** BEGIN/COMMIT/ROLLBACK/SAVEPOINT, WAL, recovery, MVCC sessions, durable database IndexedDB storage and checkpointing. Reloading loses database changes; only snippets persist.
 - **P3 absent:** scalar/IN/EXISTS/correlated subqueries, CTEs/recursive CTEs, UNION/INTERSECT/EXCEPT and windows. Three of six guided lessons await these tiers.
 - Results are fully materialized/transferred despite bounded DOM rendering. Mutations clone/validate the database. Large joins/CSV/SQL inputs have no general resource governor or cancel control; large workloads can consume memory/Worker time.
 - Strict storage types and IEEE-754 numbers differ from SQLite affinity/64-bit integers. Date functions implement a documented small UTC subset. Arbitrary SQL compatibility is not promised by the 100% sampled match rate.
 - Only Chromium was exercised. Field performance, real-device behavior, full assistive-technology review and hosted security-header delivery are not verified.
 
-This checkpoint stops at P1B-2A. P1B-2B requires a new instruction; P2 and P3 remain ordered after a built, tested and committed P1. SELECT behavior stays at P0.
+This checkpoint stops at P1B-2B. P1C requires a new instruction: begin by defining the logical/physical planning contract and estimate/actual evidence before extending access rules. P2 and P3 remain ordered after verified P1.
 
 ## Release assessment
 
-This is a tested educational P0 SQL studio with verified P1A storage, P1B-1 maintenance, P1B-2A internal reads and reproducible evidence. It is not a completed transactional database or a durable production datastore. The requested eight-name source review is complete, with one original vendor folder verified and seven legacy guides awaiting upstream replacements; native automatic catalog registration is unverified. The full original “done when” bar is not met because later tiers and indexed targets are absent.
+This is a tested educational P0 SQL studio with verified P1A storage, P1B-1 maintenance, P1B-2A internal reads, P1B-2B bounded indexed SQL and reproducible evidence. It is not a completed transactional database or a durable production datastore. The requested eight-name source review is complete, with one original vendor folder verified and seven legacy guides awaiting upstream replacements; native automatic catalog registration is unverified. The full original “done when” bar is not met because later tiers and indexed joins are absent.
 
 The static build is ready for an approved preview deployment, subject to the explicit P0 limits above. After the user created [PuteraMY/vela-database-studio](https://github.com/PuteraMY/vela-database-studio), the project was published to its main branch. The initial remote commit and owner's MIT license were preserved in merge commit `9b58b91`, along with the full local development history. No unrelated project or shared skills repository was modified. No production site deployment occurred. npm/Chromium/skill access succeeded; omitted engine tiers are scope limits rather than installation failures.
 

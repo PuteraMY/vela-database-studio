@@ -12,7 +12,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "fuzz": "tsx tools/fuzz.ts",
-    "benchmark": "tsx tools/benchmark.ts",
+    "benchmark": "tsx tools/benchmark.ts && tsx tools/benchmark-indexed-select.ts",
     "curated": "tsx tools/curated.ts",
     "skills:verify": "python3 scripts/validate_skills.py && python3 scripts/verify_skill_sources.py",
     "test:production": "VELA_E2E_PRODUCTION=1 playwright test",

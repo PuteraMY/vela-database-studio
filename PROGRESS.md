@@ -1,6 +1,6 @@
 # Progress
 
-Current milestone: P1B-2A internal index reads on `feat/vela-p1b2a-index-read-path`, based on verified P1B-1 commit `77bfc1b264392cd5320ca5a52e413972570a2d6f`. Local verification is complete; preserved core/browser results and the resumed differential/benchmark checks are recorded below. SELECT, EXPLAIN, Worker protocol and UI remain unchanged. The stacked PR targets P1B-1; preserve PR #1, PR #2 and main.
+Current milestone: P1B-2B safe indexed equality SELECT on `feat/vela-p1b2b-indexed-select`, based on verified P1B-2A commit `8744b46b188664b1a88925764a35064da147dc84`. Implementation and local release verification are complete; the GitHub checkpoint uses the existing feature branch. The stacked PR targets P1B-2A; preserve PRs #1–#3 and main.
 
 | Tier | Status | Verified boundary |
 | --- | --- | --- |
@@ -8,11 +8,21 @@ Current milestone: P1B-2A internal index reads on `feat/vela-p1b2a-index-read-pa
 | P1A — physical pages and B+tree | Implemented and locally verified | Fixed byte pages, deterministic pager, full insert/delete/rebalance/range operations, invariant checks and snapshot adapter. Independent of SQL. |
 | P1B-1 — SQL index maintenance | Implemented and locally verified | Stable IDs, normalized SQL keys, real catalog trees, atomic DML and consistency diagnostics. |
 | P1B-2A — internal index reads | Implemented and locally verified | Lifetime-scoped handles, stable-ID directory resolution, actual B+tree exact/range reads and fail-fast cursors. |
-| P1B-2B / remaining P1 | Not started | No SELECT index access, optimizer/statistics/EXPLAIN changes or tree visualizer. |
+| P1B-2B — safe indexed SELECT | Implemented and locally verified | Single-column equality, original predicate, deterministic selection, truthful trace and P0 fallback. |
+| Remaining P1 | Not started | No optimizer/statistics, estimated EXPLAIN, indexed joins or tree visualizer. |
 | P2 — transactions, WAL, MVCC | Not started | Snippet IndexedDB storage is not database persistence. Transaction commands are rejected. |
 | P3 — advanced SQL | Not started | No subqueries, CTEs, set operations or windows. Fuzz/benchmark tooling is available for P0. |
 
-## Verified commands
+## P1B-2B verified checkpoint
+
+- `npm run verify`: skills integrity, typecheck, lint, **622/622** unit tests (60.03s), build passed. Includes **1,000** seeded auto/forced-scan/SQLite comparisons and physical B+tree execution proof.
+- Production browser: **66 distinct passing cases** = 62 retained passes plus four corrected new cases (9.8s). Initial four failures were new-test `img` locators against the existing `group` role; no application change. Typecheck/lint passed again after the test-only correction. Valid expensive core/build/browser results were reused after interruption.
+- `npm run curated`: **100/100**; `npm run fuzz`: **5000/5000**, seed 355866, zero mismatches.
+- `npm run benchmark`: both asserted SQL harnesses completed. At 100k rows, unique equality **0.398 ms indexed / 179.092 ms scan** medians. Common-key LIMIT 1 **20.554 / 0.135 ms**; eager exact lookup is a documented limitation. Full samples/methodology: BENCHMARK.md and `evidence/p1b2b-*`.
+- Local Git ancestry/remote heads verified: main and PR #1–#3 branches unchanged. New branch targets P1B-2A; no merge/deploy, subagents, new dependencies, shared-skills changes or P1C work. Remote CI is distinct from local gates and reported on the stacked PR.
+- Next authorized-by-new-request work would be P1C: define a bounded logical/physical planning contract and estimated-vs-actual trace semantics before adding cost/index-range/join rules. This checkpoint stops at P1B-2B.
+
+## Previous P1B-2A verified commands (historical)
 
 | Command | Observed result |
 | --- | --- |
@@ -44,7 +54,7 @@ The final `npm run verify` ran skill integrity, typecheck, lint, all unit tests 
 
 ## Still unverified or unfinished
 
-P1B-2B SELECT index access/optimizer, P2/P3 behavior, six-lesson completeness, indexed performance targets, field Core Web Vitals, a sustained 60fps guarantee, manual screen-reader conformance, real-device/Safari/Firefox coverage, 500k browser stress performance, automatic skill catalog discovery and deployed-host headers remain unverified or absent. See REPORT.md for the full boundary and next ordered milestone.
+General optimizer/index access, P2/P3 behavior, six-lesson completeness, indexed performance targets, field Core Web Vitals, a sustained 60fps guarantee, manual screen-reader conformance, real-device/Safari/Firefox coverage, 500k browser stress performance, automatic skill catalog discovery and deployed-host headers remain unverified or absent. See REPORT.md for the full boundary and next ordered milestone.
 
 ## GitHub repository publication
 
