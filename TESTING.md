@@ -1,6 +1,18 @@
 # Testing record
 
-## P1B-2A verification
+## P1B-2B verification
+
+`npm run verify` passed skill integrity (eight entrypoints and one license), strict typecheck, lint, **622/622 unit tests across 11 files, zero skipped** (60.03s), and production build (3.38s). The 111 additions are 106 binding/eligibility/lifecycle/physical-execution tests and five seeded differential tests. The final focused run passed 159/159 across indexed SELECT, differential and index-maintenance files. An initial lint error (`no-this-alias`) was corrected with lexical closures before these final gates; no rule was disabled.
+
+The seeded tests execute **1,000 three-way SQL comparisons**, 200 each for seeds 1, 7, 42, 2026 and 3735928559. Identical rows/catalog/DML feed auto, forced-scan and SQLite databases. Comparisons check complete rows/values/multiplicity/guaranteed ordering; separate expectations check indexed/fallback selection. Random inserts, updates, deletes and index recreation run between queries, with consistency/invariant checks after batches. Failure labels include seed, step, SQL and recent DML. Known strict-affinity differences are tested against the P0 reference separately, not counted as SQLite-compatible cases.
+
+Execution proof instruments real `BPlusTree.search`, asserts no scan operator for eligible queries, and verifies that replacing physical lookup output changes SQL output. Fallback never calls physical lookup. Residual-filter tests inject an extra reference and verify WHERE rejects it. LIMIT 0 has zero lookups; LIMIT 1 distinguishes all matched references from emitted rows. Missing keys, NULL, duplicates, UNIQUE, alias/unknown/ambiguous binding, composite limitations, key-slot growth, restore/drop/recreation, failed mutations and runtime index errors are covered. P1A tree algorithms, existing binder/evaluator, maintenance/read implementations and UI remain unchanged.
+
+Production browser run: 62 existing cases passed; four new cases failed because the new test locator incorrectly requested `img` while the existing interactive plan is a `group`. Only the two locator lines changed. `npm run test:production -- --grep 'executes indexed equality|shows table-scan fallback'` then passed all four desktop/mobile cases (9.8s). Thus all 66 distinct cases have passing evidence, with the original failures retained in `artifacts/p1b2b-production.log` and `p1b2b-production-initial.json`. The 62 unaffected cases include layout checks at 360/768/1100/1440, startup console/network assertions, accessibility and 100k result virtualization. No UI/application/config files changed during either browser run. After resumption, valid core/build results were reused; typecheck and lint passed again after the test-only correction.
+
+`npm run curated` passed **100/100**; `npm run fuzz` passed **5000/5000**, seed 355866, zero mismatches. These are P0 regression suites; the 1,000 new three-way comparisons specifically cover indexed and fallback SQL. Full logs are under `artifacts/p1b2b-*.log`; compact evidence is retained under `evidence/p1b2b-*`. `npm run benchmark` completed both asserted harnesses with unchanged engine source hashes; measured results and limitations are in BENCHMARK.md.
+
+## P1B-2A verification (historical)
 
 `npm run verify` passed skills integrity, strict typecheck, lint, **511/511 tests across nine files, zero skipped**, and the production build. Unit duration: 64.56s; build: 3.06s. Focused read/maintenance/SQL suites passed **116/116 in 6.88s**. Existing 443 tests remain included. An initial benchmark-only TypeScript overload error (`readdirSync` names inferred as string-or-buffer) was corrected with explicit UTF-8 encoding before final verification.
 

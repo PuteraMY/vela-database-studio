@@ -2,7 +2,7 @@
 
 A browser-only SQL engine and a studio that shows its actual execution operators. Repository: [PuteraMY/vela-database-studio](https://github.com/PuteraMY/vela-database-studio). Product copy is in Bahasa Melayu. Engine code, comments, and documentation are in English.
 
-The SQL engine and studio implement **P0**. **P1A** provides page-backed B+trees; **P1B-1** connects explicit SQL index definitions and atomic DML maintenance; **P1B-2A** adds verified internal index reads and stable-ID resolution. SELECT still uses P0 scans. Planner index access/optimization, P2 transactions/durable database storage, and P3 advanced SQL are not implemented. See [REPORT.md](REPORT.md), [TESTING.md](TESTING.md), and [BENCHMARK.md](BENCHMARK.md) for evidence and limitations.
+The SQL engine and studio implement **P0**. **P1A** provides page-backed B+trees; **P1B-1** connects explicit SQL index definitions and atomic DML maintenance; **P1B-2A** adds verified internal index reads and stable-ID resolution. **P1B-2B** executes a safe subset of single-table equality SELECTs through explicit indexes, retaining P0 scans for other queries. Cost-based optimization, P2 transactions/durable database storage, and P3 advanced SQL are not implemented. See [REPORT.md](REPORT.md), [TESTING.md](TESTING.md), and [BENCHMARK.md](BENCHMARK.md) for evidence and limitations.
 
 ## Run
 
@@ -114,7 +114,15 @@ for (const entry of db.scanIndex(index, {
 
 Exact physical lookup includes NULL and returns duplicates in ascending stable-ID order. It does not evaluate SQL equality. Missing keys return `[]`; invalid arity/nonfinite values/current slot overflow throw `IndexReadError`. Bounds accept full keys or lexicographic prefixes, default inclusive; upper `[1]` excludes full `[1, ...]` keys. Reverse traversal reverses the full key/ID order. All active cursors fail on their next pull after any successful DDL/DML/restore, including no-op or unrelated changes; closed cursors stay closed. There is no snapshot isolation. Handles cannot be serialized into durable references.
 
-P1B-2B should start with a single-table equality index operator and differential tests for SQL binding/residual predicates/fallbacks. No SELECT index operator or optimizer is activated in P1B-2A. Internal measurements can be reproduced with `npx tsx tools/benchmark-index-read.ts`.
+### SQL indexed equality (P1B-2B)
+
+`SELECT ... FROM t WHERE t.k = 7` (also reversed operands, aliases and `==`) uses a declared single-column B+tree on `k` when types agree. Literal, arithmetic and explicitly allowlisted pure-function constants are supported. CREATE INDEX before or after inserts, duplicate values and subsequent atomic DML are supported. `src/engine/equality-access.ts` selects the source after existing binding; the original WHERE, projection and downstream operators still run. Stable-ID resolution never scans the table.
+
+NULL equality, mixed text/numeric operands, dates, CASE, AND/OR, ranges, column expressions, composite indexes and joins use P0 scans. Unsupported SQL syntax still raises its original diagnostic. No automatic PRIMARY KEY tree, collation conversion, cost model or join optimization is added. Multiple eligible indexes use deterministic name ordering, not statistics.
+
+`QueryResult.trace[].access` records the actual source (`index-equality` or `table-scan`), index/fallback reason and performed lookup/match counts. LIMIT 0 performs zero lookups. Existing EXPLAIN ANALYZE shows `Carian indeks` only for the selected index source; plain EXPLAIN remains unsupported. The internal constructor option `selectAccess: "table-scan"` provides reference comparisons without modifying SQL.
+
+Exact lookup eagerly validates all matching references before emitting rows, so LIMIT on a common key can be slower than a scan that stops early. SQL-level measurements and this tradeoff are in BENCHMARK.md. `npm run benchmark` runs the original scan/join fixture and paired indexed SELECT workloads at 1k/10k/100k rows. Earlier internal-read measurements remain reproducible with `npx tsx tools/benchmark-index-read.ts`. P1C optimizer work is deferred.
 
 ## Studio and accessibility
 

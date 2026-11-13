@@ -1,0 +1,910 @@
+{
+  "command": "npm run benchmark (tools/benchmark-indexed-select.ts)",
+  "startedAt": "2026-11-13T07:10:29.831Z",
+  "finishedAt": "2026-11-13T07:12:24.840Z",
+  "sourceHashAtStart": "8dd18f47f0daf423ad6ae5429ce75931df744bc717fd5b5d8ff85ac9e1cc1db5",
+  "sourceHashAtEnd": "8dd18f47f0daf423ad6ae5429ce75931df744bc717fd5b5d8ff85ac9e1cc1db5",
+  "hardware": {
+    "platform": "linux",
+    "release": "6.18.57",
+    "arch": "x64",
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "visibleCpus": 3,
+    "availableParallelism": 2,
+    "cpuQuota": "200000 100000",
+    "memoryLimit": "8589934592",
+    "node": "v24.22.1"
+  },
+  "methodology": {
+    "warmupsPerMode": 2,
+    "repetitionsPerMode": 9,
+    "modeOrder": "Alternated per repetition",
+    "wallIncludes": "SQL parsing, binding, selection, lookup/scan, row resolution/qualification, WHERE, projection, ORDER BY/LIMIT and complete materialization",
+    "excluded": "Fixture generation, restore/index creation, invariant checks, assertions, Worker transfer and DOM",
+    "engineMs": "Existing engine timer excludes parsing/dispatch",
+    "sourceMs": "Source Operator time includes lookup/validation/resolution/qualification together; not isolated resolver time",
+    "data": "IDs 1..N, small_key=floor((id-1)/4), broad_key=(id-1)%10, payload='Row '+id. Identical rows/catalog in both databases. Three explicit indexes; auto vs forced scan differs only in access selection.",
+    "caveats": [
+      "Shared Node host, warmed repeated keys, no concurrent DML; not a browser or production latency guarantee.",
+      "Nine-sample nearest-rank p95 is the maximum; do not interpret it as a field tail-latency estimate.",
+      "Exact lookup validates/materializes all matching references, including with LIMIT 1. Trace match counts distinguish this from emitted rows.",
+      "LIMIT without ORDER BY verifies the existing stable source order; SQL generally does not guarantee unordered result order."
+    ]
+  },
+  "results": [
+    {
+      "size": 1000,
+      "loadMs": 904.555886,
+      "measurements": [
+        {
+          "name": "existing unique key",
+          "sql": "SELECT id,small_key,payload FROM lookup_rows WHERE id=501",
+          "cardinality": 1,
+          "indexed": {
+            "wallMedianMs": 0.31839100000001963,
+            "wallP95Ms": 4.915991000000076,
+            "wallMinMs": 0.12812499999995453,
+            "wallMaxMs": 4.915991000000076,
+            "engineMedianMs": 0.21415799999999763,
+            "sourceMedianMs": 0.08508199999982935,
+            "wallSamplesMs": [
+              0.38579299999992145,
+              4.915991000000076,
+              0.31839100000001963,
+              0.24299199999995835,
+              0.2653609999999844,
+              3.6149019999998018,
+              0.41621199999985947,
+              0.2651220000000194,
+              0.12812499999995453
+            ],
+            "accessEvidence": {
+              "kind": "index-equality",
+              "table": "lookup_rows",
+              "index": "ix_id",
+              "lookupCalls": 1,
+              "matchedRowIds": 1
+            },
+            "sourceRowsOut": 1
+          },
+          "reference": {
+            "wallMedianMs": 7.873779000000013,
+            "wallP95Ms": 15.12161900000001,
+            "wallMinMs": 4.482003000000077,
+            "wallMaxMs": 15.12161900000001,
+            "engineMedianMs": 6.734609999999975,
+            "sourceMedianMs": 4.619719999999006,
+            "wallSamplesMs": [
+              11.878050999999914,
+              9.582252000000153,
+              6.794022999999925,
+              15.12161900000001,
+              7.873779000000013,
+              5.059974000000011,
+              4.573458000000073,
+              4.482003000000077,
+              10.031428000000005
+            ],
+            "accessEvidence": {
+              "kind": "table-scan",
+              "table": "lookup_rows",
+              "reason": "forced"
+            },
+            "sourceRowsOut": 1000
+          }
+        },
+        {
+          "name": "missing unique key",
+          "sql": "SELECT id,small_key,payload FROM lookup_rows WHERE id=1001",
+          "cardinality": 0,
+          "indexed": {
+            "wallMedianMs": 0.13685799999984738,
+            "wallP95Ms": 2.6777609999999186,
+            "wallMinMs": 0.07429400000000896,
+            "wallMaxMs": 2.6777609999999186,
+            "engineMedianMs": 0.09666599999991377,
+            "sourceMedianMs": 0.0516379999999117,
+            "wallSamplesMs": [
+              2.6777609999999186,
+              0.21539000000007036,
+              0.09518100000013874,
+              0.2574069999998301,
+              0.09694400000012138,
+              0.17829299999993964,
+              0.13685799999984738,
+              0.12132499999984248,
+              0.07429400000000896
+            ],
+            "accessEvidence": {
+              "kind": "index-equality",
+              "table": "lookup_rows",
+              "index": "ix_id",
+              "lookupCalls": 1,
+              "matchedRowIds": 0
+            },
+            "sourceRowsOut": 0
+          },
+          "reference": {
+            "wallMedianMs": 2.2533699999999044,
+            "wallP95Ms": 6.753082999999833,
+            "wallMinMs": 1.7301500000000942,
+            "wallMaxMs": 6.753082999999833,
+            "engineMedianMs": 2.2137330000000475,
+            "sourceMedianMs": 1.9296499999991283,
+            "wallSamplesMs": [
+              4.453157999999803,
+              6.753082999999833,
+              5.787656999999854,
+              3.1740639999998166,
+              2.158003000000008,
+              2.2533699999999044,
+              1.8049869999999828,
+              1.7301500000000942,
+              1.8400790000000598
+            ],
+            "accessEvidence": {
+              "kind": "table-scan",
+              "table": "lookup_rows",
+              "reason": "forced"
+            },
+            "sourceRowsOut": 1000
+          }
+        },
+        {
+          "name": "four non-unique matches",
+          "sql": "SELECT id,small_key,payload FROM lookup_rows WHERE small_key=125 ORDER BY id",
+          "cardinality": 4,
+          "indexed": {
+            "wallMedianMs": 0.20792800000003808,
+            "wallP95Ms": 0.39240799999993214,
+            "wallMinMs": 0.15618499999982305,
+            "wallMaxMs": 0.39240799999993214,
+            "engineMedianMs": 0.1637919999998303,
+            "sourceMedianMs": 0.07938499999977466,
+            "wallSamplesMs": [
+              0.3501770000000306,
+              0.20453299999985575,
+              0.3248309999999037,
+              0.16444699999988188,
+              0.20792800000003808,
+              0.39240799999993214,
+              0.15618499999982305,
+              0.24793900000008762,
+              0.17691500000000815
+            ],
+            "accessEvidence": {
+              "kind": "index-equality",
+              "table": "lookup_rows",
+              "index": "ix_small",
+              "lookupCalls": 1,
+              "matchedRowIds": 4
+            },
+            "sourceRowsOut": 4
+          },
+          "reference": {
+            "wallMedianMs": 2.013823999999886,
+            "wallP95Ms": 2.721971000000167,
+            "wallMinMs": 1.732106000000158,
+            "wallMaxMs": 2.721971000000167,
+            "engineMedianMs": 1.9666310000000067,
+            "sourceMedianMs": 1.6773010000026716,
+            "wallSamplesMs": [
+              2.0465500000000247,
+              2.013823999999886,
+              1.732106000000158,
+              1.7353390000000672,
+              2.721971000000167,
+              2.335416000000123,
+              1.7874669999998787,
+              2.142038000000184,
+              1.9756179999999404
+            ],
+            "accessEvidence": {
+              "kind": "table-scan",
+              "table": "lookup_rows",
+              "reason": "forced"
+            },
+            "sourceRowsOut": 1000
+          }
+        },
+        {
+          "name": "ten-percent matches",
+          "sql": "SELECT id,small_key,payload FROM lookup_rows WHERE broad_key=3 ORDER BY id",
+          "cardinality": 100,
+          "indexed": {
+            "wallMedianMs": 0.9021900000000187,
+            "wallP95Ms": 3.751373000000058,
+            "wallMinMs": 0.5752629999999499,
+            "wallMaxMs": 3.751373000000058,
+            "engineMedianMs": 0.8569760000000315,
+            "sourceMedianMs": 0.5327140000010786,
+            "wallSamplesMs": [
+              1.1603809999999157,
+              0.9021900000000187,
+              3.14009800000008,
+              0.828661000000011,
+              0.6033209999998235,
+              0.5752629999999499,
+              0.7780969999998888,
+              2.6805259999998725,
+              3.751373000000058
+            ],
+            "accessEvidence": {
+              "kind": "index-equality",
+              "table": "lookup_rows",
+              "index": "ix_broad",
+              "lookupCalls": 1,
+              "matchedRowIds": 100
+            },
+            "sourceRowsOut": 100
+          },
+          "reference": {
+            "wallMedianMs": 2.8641190000000734,
+            "wallP95Ms": 9.897813999999926,
+            "wallMinMs": 1.843661000000111,
+            "wallMaxMs": 9.897813999999926,
+            "engineMedianMs": 2.7418840000000273,
+            "sourceMedianMs": 1.7768760000003567,
+            "wallSamplesMs": [
+              1.843661000000111,
+              2.226024999999936,
+              8.049907000000076,
+              2.8641190000000734,
+              2.264938000000029,
+              1.8796159999999418,
+              4.414483000000018,
+              4.026209999999992,
+              9.897813999999926
+            ],
+            "accessEvidence": {
+              "kind": "table-scan",
+              "table": "lookup_rows",
+              "reason": "forced"
+            },
+            "sourceRowsOut": 1000
+          }
+        },
+        {
+          "name": "ten-percent key with LIMIT 1",
+          "sql": "SELECT id,small_key,payload FROM lookup_rows WHERE broad_key=3 LIMIT 1",
+          "cardinality": 1,
+          "indexed": {
+            "wallMedianMs": 0.25085699999999633,
+            "wallP95Ms": 3.291301000000203,
+            "wallMinMs": 0.20022599999992963,
+            "wallMaxMs": 3.291301000000203,
+            "engineMedianMs": 0.2353849999999511,
+            "sourceMedianMs": 0.187076000000161,
+            "wallSamplesMs": [
+              0.25085699999999633,
+              1.5093500000000404,
+              0.29460900000003676,
+              0.21380900000008296,
+              0.20723799999996118,
+              0.2140900000001693,
+              0.20022599999992963,
+              3.291301000000203,
+              0.4266649999999572
+            ],
+            "accessEvidence": {
+              "kind": "index-equality",
+              "table": "lookup_rows",
+              "index": "ix_broad",
+              "lookupCalls": 1,
+              "matchedRowIds": 100
+            },
+            "sourceRowsOut": 1
+          },
+          "reference": {
+            "wallMedianMs": 0.06174800000007963,
+            "wallP95Ms": 1.576479000000063,
+            "wallMinMs": 0.03713399999992362,
+            "wallMaxMs": 1.576479000000063,
+            "engineMedianMs": 0.04756700000007186,
+            "sourceMedianMs": 0.006294999999909123,
+            "wallSamplesMs": [
+              0.06174800000007963,
+              0.04071399999997993,
+              0.05455400000005284,
+              0.0405110000001514,
+              0.03713399999992362,
+              0.09065800000007584,
+              1.576479000000063,
+              0.08567199999993136,
+              0.12579600000003666
+            ],
+            "accessEvidence": {
+              "kind": "table-scan",
+              "table": "lookup_rows",
+              "reason": "forced"
+            },
+            "sourceRowsOut": 4
+          }
+        }
+      ]
+    },
+    {
+      "size": 10000,
+      "loadMs": 7076.383462,
+      "measurements": [
+        {
+          "name": "existing unique key",
+          "sql": "SELECT id,small_key,payload FROM lookup_rows WHERE id=5001",
+          "cardinality": 1,
+          "indexed": {
+            "wallMedianMs": 0.264180000000124,
+            "wallP95Ms": 0.7137669999992795,
+            "wallMinMs": 0.09673500000099011,
+            "wallMaxMs": 0.7137669999992795,
+            "engineMedianMs": 0.19539700000132143,
+            "sourceMedianMs": 0.08356200000162062,
+            "wallSamplesMs": [
+              0.1949559999993653,
+              0.21855799999866576,
+              0.09673500000099011,
+              0.290791999999783,
+              0.7137669999992795,
+              0.264180000000124,
+              0.10479800000030082,
+              0.3211489999994228,
+              0.2713309999999183
+            ],
+            "accessEvidence": {
+              "kind": "index-equality",
+              "table": "lookup_rows",
+              "index": "ix_id",
+              "lookupCalls": 1,
+              "matchedRowIds": 1
+            },
+            "sourceRowsOut": 1
+          },
+          "reference": {
+            "wallMedianMs": 16.647205999999642,
+            "wallP95Ms": 19.68743800000084,
+            "wallMinMs": 15.815151999999216,
+            "wallMaxMs": 19.68743800000084,
+            "engineMedianMs": 16.600307000000612,
+            "sourceMedianMs": 14.342713000036383,
+            "wallSamplesMs": [
+              17.64960400000018,
+              16.647205999999642,
+              18.377512999999453,
+              19.68743800000084,
+              16.182270999999673,
+              15.815151999999216,
+              15.86685899999975,
+              16.91363100000126,
+              15.877916999999798
+            ],
+            "accessEvidence": {
+              "kind": "table-scan",
+              "table": "lookup_rows",
+              "reason": "forced"
+            },
+            "sourceRowsOut": 10000
+          }
+        },
+        {
+          "name": "missing unique key",
+          "sql": "SELECT id,small_key,payload FROM lookup_rows WHERE id=10001",
+          "cardinality": 0,
+          "indexed": {
+            "wallMedianMs": 0.21216800000001967,
+            "wallP95Ms": 0.40251900000112073,
+            "wallMinMs": 0.10055199999987963,
+            "wallMaxMs": 0.40251900000112073,
+            "engineMedianMs": 0.15596700000060082,
+            "sourceMedianMs": 0.07383399999889662,
+            "wallSamplesMs": [
+              0.34477199999855657,
+              0.23983299999963492,
+              0.10055199999987963,
+              0.21216800000001967,
+              0.17547399999966729,
+              0.2692459999998391,
+              0.1875949999994191,
+              0.40251900000112073,
+              0.13205999999991036
+            ],
+            "accessEvidence": {
+              "kind": "index-equality",
+              "table": "lookup_rows",
+              "index": "ix_id",
+              "lookupCalls": 1,
+              "matchedRowIds": 0
+            },
+            "sourceRowsOut": 0
+          },
+          "reference": {
+            "wallMedianMs": 16.726956999998947,
+            "wallP95Ms": 17.477562000000034,
+            "wallMinMs": 15.281007999999929,
+            "wallMaxMs": 17.477562000000034,
+            "engineMedianMs": 16.70951000000059,
+            "sourceMedianMs": 14.427654000013717,
+            "wallSamplesMs": [
+              15.62333100000069,
+              17.325080000000526,
+              15.726842000000033,
+              17.477562000000034,
+              15.281007999999929,
+              16.378866000000926,
+              17.183915000001434,
+              17.12683300000026,
+              16.726956999998947
+            ],
+            "accessEvidence": {
+              "kind": "table-scan",
+              "table": "lookup_rows",
+              "reason": "forced"
+            },
+            "sourceRowsOut": 10000
+          }
+        },
+        {
+          "name": "four non-unique matches",
+          "sql": "SELECT id,small_key,payload FROM lookup_rows WHERE small_key=1250 ORDER BY id",
+          "cardinality": 4,
+          "indexed": {
+            "wallMedianMs": 0.29175600000053237,
+            "wallP95Ms": 0.4147499999999127,
+            "wallMinMs": 0.22770399999899382,
+            "wallMaxMs": 0.4147499999999127,
+            "engineMedianMs": 0.25152300000081595,
+            "sourceMedianMs": 0.11207999999896856,
+            "wallSamplesMs": [
+              0.24361800000042422,
+              0.27359400000023015,
+              0.2485529999994469,
+              0.4147499999999127,
+              0.31336800000099174,
+              0.22770399999899382,
+              0.36374699999942095,
+              0.34798899999987043,
+              0.29175600000053237
+            ],
+            "accessEvidence": {
+              "kind": "index-equality",
+              "table": "lookup_rows",
+              "index": "ix_small",
+              "lookupCalls": 1,
+              "matchedRowIds": 4
+            },
+            "sourceRowsOut": 4
+          },
+          "reference": {
+            "wallMedianMs": 16.729607000001124,
+            "wallP95Ms": 17.615959000000657,
+            "wallMinMs": 15.654958999999508,
+            "wallMaxMs": 17.615959000000657,
+            "engineMedianMs": 16.692313999999897,
+            "sourceMedianMs": 13.961840000005395,
+            "wallSamplesMs": [
+              15.801539999998568,
+              15.654958999999508,
+              16.729607000001124,
+              17.615959000000657,
+              16.278791000000638,
+              16.511058000000048,
+              17.459130000001096,
+              17.098920000000362,
+              17.304148999999597
+            ],
+            "accessEvidence": {
+              "kind": "table-scan",
+              "table": "lookup_rows",
+              "reason": "forced"
+            },
+            "sourceRowsOut": 10000
+          }
+        },
+        {
+          "name": "ten-percent matches",
+          "sql": "SELECT id,small_key,payload FROM lookup_rows WHERE broad_key=3 ORDER BY id",
+          "cardinality": 1000,
+          "indexed": {
+            "wallMedianMs": 5.474269000000277,
+            "wallP95Ms": 6.547282999999879,
+            "wallMinMs": 4.934330000000045,
+            "wallMaxMs": 6.547282999999879,
+            "engineMedianMs": 5.418904000000111,
+            "sourceMedianMs": 3.5771049999639217,
+            "wallSamplesMs": [
+              5.849140000000261,
+              4.964857999999367,
+              5.5432160000000295,
+              5.67359899999974,
+              5.474269000000277,
+              4.934330000000045,
+              5.360705999999482,
+              6.547282999999879,
+              5.219938000000184
+            ],
+            "accessEvidence": {
+              "kind": "index-equality",
+              "table": "lookup_rows",
+              "index": "ix_broad",
+              "lookupCalls": 1,
+              "matchedRowIds": 1000
+            },
+            "sourceRowsOut": 1000
+          },
+          "reference": {
+            "wallMedianMs": 18.42902099999992,
+            "wallP95Ms": 20.34634399999959,
+            "wallMinMs": 17.86782099999982,
+            "wallMaxMs": 20.34634399999959,
+            "engineMedianMs": 18.37212499999987,
+            "sourceMedianMs": 14.161036999976204,
+            "wallSamplesMs": [
+              20.34634399999959,
+              18.233432999999422,
+              18.358373999999458,
+              18.42902099999992,
+              17.86782099999982,
+              18.006483999999546,
+              18.630560000001424,
+              19.313868999999613,
+              19.583709000000454
+            ],
+            "accessEvidence": {
+              "kind": "table-scan",
+              "table": "lookup_rows",
+              "reason": "forced"
+            },
+            "sourceRowsOut": 10000
+          }
+        },
+        {
+          "name": "ten-percent key with LIMIT 1",
+          "sql": "SELECT id,small_key,payload FROM lookup_rows WHERE broad_key=3 LIMIT 1",
+          "cardinality": 1,
+          "indexed": {
+            "wallMedianMs": 1.997348000000784,
+            "wallP95Ms": 3.3671699999995326,
+            "wallMinMs": 1.5067629999994097,
+            "wallMaxMs": 3.3671699999995326,
+            "engineMedianMs": 1.9835480000001553,
+            "sourceMedianMs": 1.9397989999997662,
+            "wallSamplesMs": [
+              1.5067629999994097,
+              1.919781000000512,
+              3.3671699999995326,
+              2.3146539999997913,
+              2.875437000000602,
+              2.5511850000002596,
+              1.6300019999998767,
+              1.997348000000784,
+              1.7590709999985847
+            ],
+            "accessEvidence": {
+              "kind": "index-equality",
+              "table": "lookup_rows",
+              "index": "ix_broad",
+              "lookupCalls": 1,
+              "matchedRowIds": 1000
+            },
+            "sourceRowsOut": 1
+          },
+          "reference": {
+            "wallMedianMs": 0.09410200000093027,
+            "wallP95Ms": 0.20931299999938346,
+            "wallMinMs": 0.04404699999940931,
+            "wallMaxMs": 0.20931299999938346,
+            "engineMedianMs": 0.06015500000103202,
+            "sourceMedianMs": 0.006996999998591491,
+            "wallSamplesMs": [
+              0.11855699999978242,
+              0.04404699999940931,
+              0.1062549999987823,
+              0.055661000000327476,
+              0.09410200000093027,
+              0.05036899999868183,
+              0.13378800000100455,
+              0.09175099999993108,
+              0.20931299999938346
+            ],
+            "accessEvidence": {
+              "kind": "table-scan",
+              "table": "lookup_rows",
+              "reason": "forced"
+            },
+            "sourceRowsOut": 4
+          }
+        }
+      ]
+    },
+    {
+      "size": 100000,
+      "loadMs": 93261.021269,
+      "measurements": [
+        {
+          "name": "existing unique key",
+          "sql": "SELECT id,small_key,payload FROM lookup_rows WHERE id=50001",
+          "cardinality": 1,
+          "indexed": {
+            "wallMedianMs": 0.3979879999969853,
+            "wallP95Ms": 0.5256539999973029,
+            "wallMinMs": 0.1366109999944456,
+            "wallMaxMs": 0.5256539999973029,
+            "engineMedianMs": 0.3105109999887645,
+            "sourceMedianMs": 0.14172300000791438,
+            "wallSamplesMs": [
+              0.5069099999964237,
+              0.3979879999969853,
+              0.1366109999944456,
+              0.4711000000097556,
+              0.1567700000014156,
+              0.43374799999583047,
+              0.23877200001152232,
+              0.5256539999973029,
+              0.2303890000039246
+            ],
+            "accessEvidence": {
+              "kind": "index-equality",
+              "table": "lookup_rows",
+              "index": "ix_id",
+              "lookupCalls": 1,
+              "matchedRowIds": 1
+            },
+            "sourceRowsOut": 1
+          },
+          "reference": {
+            "wallMedianMs": 179.0924890000024,
+            "wallP95Ms": 184.91524700001173,
+            "wallMinMs": 170.12086799999815,
+            "wallMaxMs": 184.91524700001173,
+            "engineMedianMs": 179.04098999999405,
+            "sourceMedianMs": 154.4526879999903,
+            "wallSamplesMs": [
+              177.305165999991,
+              177.19343800000206,
+              176.7455789999949,
+              170.12086799999815,
+              179.63948100000562,
+              179.96813900000416,
+              179.8267049999995,
+              184.91524700001173,
+              179.0924890000024
+            ],
+            "accessEvidence": {
+              "kind": "table-scan",
+              "table": "lookup_rows",
+              "reason": "forced"
+            },
+            "sourceRowsOut": 100000
+          }
+        },
+        {
+          "name": "missing unique key",
+          "sql": "SELECT id,small_key,payload FROM lookup_rows WHERE id=100001",
+          "cardinality": 0,
+          "indexed": {
+            "wallMedianMs": 0.35484099999303,
+            "wallP95Ms": 0.4400750000058906,
+            "wallMinMs": 0.11476400001265574,
+            "wallMaxMs": 0.4400750000058906,
+            "engineMedianMs": 0.2636649999913061,
+            "sourceMedianMs": 0.12940900000103284,
+            "wallSamplesMs": [
+              0.4400750000058906,
+              0.3660459999955492,
+              0.14618199999677017,
+              0.3559520000126213,
+              0.2717399999964982,
+              0.4125189999904251,
+              0.15187699999660254,
+              0.35484099999303,
+              0.11476400001265574
+            ],
+            "accessEvidence": {
+              "kind": "index-equality",
+              "table": "lookup_rows",
+              "index": "ix_id",
+              "lookupCalls": 1,
+              "matchedRowIds": 0
+            },
+            "sourceRowsOut": 0
+          },
+          "reference": {
+            "wallMedianMs": 181.3563770000037,
+            "wallP95Ms": 191.81830499999342,
+            "wallMinMs": 173.08834000000206,
+            "wallMaxMs": 191.81830499999342,
+            "engineMedianMs": 181.33298300000024,
+            "sourceMedianMs": 156.53315399996063,
+            "wallSamplesMs": [
+              177.29921399999876,
+              190.931865999999,
+              181.3563770000037,
+              173.08834000000206,
+              191.81830499999342,
+              178.20811099999992,
+              179.86326199999894,
+              182.51330799999414,
+              189.56669000000693
+            ],
+            "accessEvidence": {
+              "kind": "table-scan",
+              "table": "lookup_rows",
+              "reason": "forced"
+            },
+            "sourceRowsOut": 100000
+          }
+        },
+        {
+          "name": "four non-unique matches",
+          "sql": "SELECT id,small_key,payload FROM lookup_rows WHERE small_key=12500 ORDER BY id",
+          "cardinality": 4,
+          "indexed": {
+            "wallMedianMs": 0.3901449999975739,
+            "wallP95Ms": 0.8821709999901941,
+            "wallMinMs": 0.17564400000264868,
+            "wallMaxMs": 0.8821709999901941,
+            "engineMedianMs": 0.2987040000007255,
+            "sourceMedianMs": 0.15181999999913387,
+            "wallSamplesMs": [
+              0.3901449999975739,
+              0.6028020000085235,
+              0.3315230000007432,
+              0.5133110000024317,
+              0.17564400000264868,
+              0.8821709999901941,
+              0.19530000000668224,
+              0.6636659999930998,
+              0.29779599999892525
+            ],
+            "accessEvidence": {
+              "kind": "index-equality",
+              "table": "lookup_rows",
+              "index": "ix_small",
+              "lookupCalls": 1,
+              "matchedRowIds": 4
+            },
+            "sourceRowsOut": 4
+          },
+          "reference": {
+            "wallMedianMs": 180.93162600000505,
+            "wallP95Ms": 224.49934300000314,
+            "wallMinMs": 172.95919699998922,
+            "wallMaxMs": 224.49934300000314,
+            "engineMedianMs": 180.78194500000973,
+            "sourceMedianMs": 155.53951100152335,
+            "wallSamplesMs": [
+              179.12613099999726,
+              180.93162600000505,
+              178.57858699999633,
+              184.81177500000922,
+              194.2016619999922,
+              180.39132199999585,
+              224.49934300000314,
+              182.24850700001116,
+              172.95919699998922
+            ],
+            "accessEvidence": {
+              "kind": "table-scan",
+              "table": "lookup_rows",
+              "reason": "forced"
+            },
+            "sourceRowsOut": 100000
+          }
+        },
+        {
+          "name": "ten-percent matches",
+          "sql": "SELECT id,small_key,payload FROM lookup_rows WHERE broad_key=3 ORDER BY id",
+          "cardinality": 10000,
+          "indexed": {
+            "wallMedianMs": 61.26709100000153,
+            "wallP95Ms": 68.52532899999642,
+            "wallMinMs": 54.196028999998816,
+            "wallMaxMs": 68.52532899999642,
+            "engineMedianMs": 61.08939800001099,
+            "sourceMedianMs": 41.51531300047645,
+            "wallSamplesMs": [
+              65.6966209999955,
+              62.09626200000639,
+              59.77196300000651,
+              65.62927299999865,
+              59.686077999998815,
+              68.52532899999642,
+              56.40348300000187,
+              61.26709100000153,
+              54.196028999998816
+            ],
+            "accessEvidence": {
+              "kind": "index-equality",
+              "table": "lookup_rows",
+              "index": "ix_broad",
+              "lookupCalls": 1,
+              "matchedRowIds": 10000
+            },
+            "sourceRowsOut": 10000
+          },
+          "reference": {
+            "wallMedianMs": 206.27969900000608,
+            "wallP95Ms": 216.77126799999678,
+            "wallMinMs": 200.9901819999941,
+            "wallMaxMs": 216.77126799999678,
+            "engineMedianMs": 206.18891900000744,
+            "sourceMedianMs": 162.92093899851898,
+            "wallSamplesMs": [
+              205.64254600000277,
+              200.9901819999941,
+              210.84276299999328,
+              202.54014700000698,
+              206.27969900000608,
+              212.36601100000553,
+              216.77126799999678,
+              211.8673689999996,
+              203.19362000000547
+            ],
+            "accessEvidence": {
+              "kind": "table-scan",
+              "table": "lookup_rows",
+              "reason": "forced"
+            },
+            "sourceRowsOut": 100000
+          }
+        },
+        {
+          "name": "ten-percent key with LIMIT 1",
+          "sql": "SELECT id,small_key,payload FROM lookup_rows WHERE broad_key=3 LIMIT 1",
+          "cardinality": 1,
+          "indexed": {
+            "wallMedianMs": 20.55449399999634,
+            "wallP95Ms": 38.916473999997834,
+            "wallMinMs": 15.477760000008857,
+            "wallMaxMs": 38.916473999997834,
+            "engineMedianMs": 20.532116000002134,
+            "sourceMedianMs": 20.402323999995133,
+            "wallSamplesMs": [
+              24.793158999993466,
+              18.309911999996984,
+              17.57812799999374,
+              28.389185000007274,
+              38.916473999997834,
+              20.55449399999634,
+              16.202004000006127,
+              15.477760000008857,
+              25.544794000001275
+            ],
+            "accessEvidence": {
+              "kind": "index-equality",
+              "table": "lookup_rows",
+              "index": "ix_broad",
+              "lookupCalls": 1,
+              "matchedRowIds": 10000
+            },
+            "sourceRowsOut": 1
+          },
+          "reference": {
+            "wallMedianMs": 0.13473099999828264,
+            "wallP95Ms": 0.36522200000763405,
+            "wallMinMs": 0.05118600001151208,
+            "wallMaxMs": 0.36522200000763405,
+            "engineMedianMs": 0.07388000001083128,
+            "sourceMedianMs": 0.008914999983971938,
+            "wallSamplesMs": [
+              0.13473099999828264,
+              0.05118600001151208,
+              0.36522200000763405,
+              0.09565299999667332,
+              0.16694599999755155,
+              0.0968799999973271,
+              0.19249800000397954,
+              0.20591200000490062,
+              0.1205000000045402
+            ],
+            "accessEvidence": {
+              "kind": "table-scan",
+              "table": "lookup_rows",
+              "reason": "forced"
+            },
+            "sourceRowsOut": 4
+          }
+        }
+      ]
+    }
+  ],
+  "rawArtifact": "artifacts/benchmark-indexed-select.json"
+}

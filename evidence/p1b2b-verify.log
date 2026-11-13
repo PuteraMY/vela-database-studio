@@ -1,0 +1,62 @@
+
+> vela-studio@0.1.0 verify
+> npm run skills:verify && npm run typecheck && npm run lint && npm test && npm run build
+
+
+> vela-studio@0.1.0 skills:verify
+> python3 scripts/validate_skills.py && python3 scripts/verify_skill_sources.py
+
+PASS: 8 local entries; 1 vendor-original folder, 7 legacy custom guides
+Runtime discovery and plugin installation are not validated by this script.
+PASS: 8 entrypoint hashes + 1 support-file hashes
+A matching legacy-guide hash does not establish official vendor provenance.
+
+> vela-studio@0.1.0 typecheck
+> tsc --noEmit
+
+
+> vela-studio@0.1.0 lint
+> eslint .
+
+
+> vela-studio@0.1.0 test
+> vitest run
+
+
+ RUN  v4.1.12 /workspace
+
+
+ Test Files  11 passed (11)
+      Tests  622 passed (622)
+   Start at  02:41:09
+   Duration  60.03s (transform 743ms, setup 0ms, import 1.26s, tests 56.66s, environment 1ms)
+
+
+> vela-studio@0.1.0 build
+> tsc -b && vite build
+
+vite v6.4.6 building for production...
+transforming...
+✓ 80 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/assets/sql-wasm-BxMKec0L.js                              0.06 kB
+dist/index.html                                               0.85 kB │ gzip:   0.46 kB
+dist/assets/manrope-latin-500-normal-BYYD-dBL.woff2          14.04 kB
+dist/assets/manrope-latin-400-normal-PaqtzbVb.woff2          14.11 kB
+dist/assets/manrope-latin-600-normal-4f0koTD-.woff2          14.17 kB
+dist/assets/manrope-latin-700-normal-BZp_XxE4.woff2          14.21 kB
+dist/assets/manrope-latin-500-normal-DMZssgOp.woff           18.24 kB
+dist/assets/manrope-latin-400-normal-8tf8FM3T.woff           18.29 kB
+dist/assets/manrope-latin-600-normal-BqgrALkZ.woff           18.38 kB
+dist/assets/manrope-latin-700-normal-DGRFkw-m.woff           18.41 kB
+dist/assets/jetbrains-mono-latin-400-normal-V6pRDFza.woff2   21.17 kB
+dist/assets/jetbrains-mono-latin-400-normal-6-qcROiO.woff    27.50 kB
+dist/assets/sql-wasm-browser-DS2XlfSl.js                     41.99 kB
+dist/assets/engine.worker-CQ_Rl6l5.js                        65.08 kB
+dist/assets/sql-wasm-B-9ndiyM.wasm                          685.24 kB │ gzip: 336.42 kB
+dist/assets/index-P2w9lRus.css                               38.22 kB │ gzip:   8.58 kB
+dist/assets/index-DReA7PN7.js                                47.36 kB │ gzip:  15.57 kB
+dist/assets/react-H-IQNi2l.js                               223.84 kB │ gzip:  69.56 kB
+dist/assets/editor-DjK1ELxX.js                              385.94 kB │ gzip: 127.21 kB
+✓ built in 3.38s

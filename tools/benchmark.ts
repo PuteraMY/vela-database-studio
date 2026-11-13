@@ -211,7 +211,7 @@ const queries = [
     1,
     3,
     1000,
-    "Nested-loop join with 10,000,000 equality probes; SELECT has no index access or hash join.",
+    "Nested-loop join with 10,000,000 equality probes; joins have no indexed or hash execution path.",
     (result) => assert.deepEqual(result.rows, [[FACT_ROWS]]),
   ),
 ];
@@ -270,7 +270,7 @@ const report = {
   caveats: [
     "Measured in Node.js on a shared Linux execution environment, not an end-user browser. Concurrent development/test work may affect timings.",
     "Wall timings include SQL parse, planning/binding, execution and result materialization; exclude assertion checks, Worker transfer and rendering.",
-    "P1B-1 maintains explicit B+tree indexes, but SELECT has no index access, statistics-driven optimizer or indexed joins. This fixture declares only PRIMARY KEY constraints; measured queries use full scans and nested loops.",
+    "P1B-2B supports explicit single-column indexed equality. This fixture declares only PRIMARY KEY constraints (no automatic indexes), so its queries still use full scans and nested loops. Paired indexed SELECT measurements are in benchmark-indexed-select.json; no statistics-driven optimizer or indexed joins exist.",
     "p95 uses the nearest-rank sample percentile. Three-sample p95 is the maximum sample, not a production latency estimate.",
     "Operator times are inclusive downstream pull time and must not be summed as exclusive CPU time.",
   ],

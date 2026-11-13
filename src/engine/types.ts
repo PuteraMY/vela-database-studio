@@ -110,6 +110,24 @@ export interface DatabaseState {
   tables: Table[];
   indexes: IndexDefinition[];
 }
+export type ScanReason =
+  | "forced"
+  | "multiple-tables"
+  | "unsupported-predicate"
+  | "unsafe-constant"
+  | "null-or-nonfinite"
+  | "incompatible-type"
+  | "no-compatible-index"
+  | "key-capacity";
+export type AccessTrace =
+  | { kind: "table-scan"; table: string; reason: ScanReason }
+  | {
+      kind: "index-equality";
+      table: string;
+      index: string;
+      lookupCalls: number;
+      matchedRowIds: number;
+    };
 export interface Trace {
   id: number;
   parent?: number;
@@ -118,6 +136,7 @@ export interface Trace {
   rowsIn: number;
   rowsOut: number;
   ms: number;
+  access?: AccessTrace;
 }
 export interface QueryResult {
   columns: string[];
