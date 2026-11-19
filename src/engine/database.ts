@@ -1,4 +1,5 @@
 import { parse } from "./parser";
+import { planEqualityAccess } from "./access-plan";
 import { chooseEqualityAccess, type SelectAccessMode } from "./equality-access";
 import {
   IndexReadPath,
@@ -577,14 +578,26 @@ export class Database {
           yield { row: {} };
         });
       const s = q.from;
-      const access = chooseEqualityAccess(
+      const eligible = chooseEqualityAccess(
         q,
         this.table(s.table).columns,
         this.state.indexes,
         this.indexes,
         this.selectAccess,
       );
-      if (access.kind === "table-scan") return scan(s, access.reason);
+      const { access, planning } = planEqualityAccess(
+        q,
+        eligible,
+        this.table(s.table),
+        this.state.indexes,
+      );
+      if (access.kind === "table-scan") {
+        const source = scan(s, access.reason);
+        if (source.trace.access && planning)
+          source.trace.access.planning = planning;
+        if (planning) source.trace.detail += ` · ${planning.detail}`;
+        return source;
+      }
       const openCursor = () =>
         this.scanIndex(
           this.indexHandle(this.tableHandle(s.table), access.index),
@@ -596,10 +609,11 @@ export class Database {
         index: access.index,
         lookupCalls: 0,
         matchedRowIds: 0,
+        planning,
       };
       const source = op(
         "Carian indeks",
-        `${s.table} · ${access.index} · padanan tepat`,
+        `${s.table} · ${access.index} · padanan tepat${planning ? ` · ${planning.detail}` : ""}`,
         [],
         function* () {
           evidence.lookupCalls++;

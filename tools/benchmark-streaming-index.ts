@@ -9,8 +9,13 @@ import { Database } from "../src/engine/database";
 import type { Value } from "../src/engine/types";
 
 // Execute the exact verified predecessor, without changing branches or adding a runtime mode.
-const baseCommit = "f39ff56d8961ac556e953ecf80cff328c5721cd7";
-const baselineDir = resolve("artifacts/p1c1-benchmark-base");
+const planner = process.argv.includes("--planner");
+const baseCommit = planner
+  ? "8805cacd2ee207540c09a212cb3f770a251864e3"
+  : "f39ff56d8961ac556e953ecf80cff328c5721cd7";
+const baselineDir = resolve(
+  planner ? "artifacts/p1c2a-benchmark-base" : "artifacts/p1c1-benchmark-base",
+);
 mkdirSync(baselineDir, { recursive: true });
 execFileSync("tar", ["-x", "-C", baselineDir], {
   input: execFileSync("git", ["archive", baseCommit, "src/engine"]),
@@ -35,7 +40,7 @@ const sourceAtStart = sourceHash(),
 const percentile = (samples: number[], p: number) =>
   [...samples].sort((a, b) => a - b)[Math.ceil(samples.length * p) - 1];
 const sizes = [];
-for (const size of [1000, 10000, 100000]) {
+for (const size of planner ? [100000] : [1000, 10000, 100000]) {
   console.log(
     `Preparing ${size} rows: predecessor indexed, streaming indexed, reference scan.`,
   );
@@ -46,6 +51,7 @@ for (const size of [1000, 10000, 100000]) {
   before.execute(
     "CREATE TABLE t(id INTEGER PRIMARY KEY,k INTEGER,v INTEGER); CREATE INDEX ix ON t(k)",
   );
+  if (planner) before.execute("CREATE UNIQUE INDEX ix_id ON t(id)");
   const state = before.export();
   state.tables[0].rows = Array.from({ length: size }, (_, i) => ({
     id: i + 1,
@@ -99,6 +105,24 @@ for (const size of [1000, 10000, 100000]) {
       ],
     },
   ];
+  if (planner)
+    cases.push(
+      {
+        name: "unique equality",
+        sql: `SELECT id,v FROM t WHERE id=${size - 1}`,
+        expected: project(state.tables[0].rows.slice(size - 2, size - 1)),
+      },
+      {
+        name: "duplicate without LIMIT",
+        sql: "SELECT id,v FROM t WHERE k=3",
+        expected: project(matches),
+      },
+      {
+        name: "late prefix LIMIT 1",
+        sql: "SELECT id,v FROM t WHERE k=8 LIMIT 1",
+        expected: project(state.tables[0].rows.slice(8, 9)),
+      },
+    );
   const measurements = [];
   for (const c of cases) {
     const execute = (mode: keyof typeof databases) => {
@@ -110,7 +134,12 @@ for (const size of [1000, 10000, 100000]) {
       assert.ok(source?.access);
       assert.equal(
         source.access.kind,
-        mode === "scan" ? "table-scan" : "index-equality",
+        mode === "scan" ||
+          (mode === "streaming" &&
+            size >= 1024 &&
+            c.name === "duplicate LIMIT 1")
+          ? "table-scan"
+          : "index-equality",
       );
       return { wallMs, sourceRows: source.rowsOut, access: source.access };
     };
@@ -162,10 +191,14 @@ const optional = (path: string) => {
   }
 };
 writeFileSync(
-  "artifacts/p1c1-streaming-benchmark.json",
+  planner
+    ? "artifacts/p1c2a-planner-benchmark.json"
+    : "artifacts/p1c1-streaming-benchmark.json",
   JSON.stringify(
     {
-      command: "npm run benchmark:streaming",
+      command: planner
+        ? "npm run benchmark:planner"
+        : "npm run benchmark:streaming",
       baseCommit,
       sourceAtStart,
       sourceAtEnd,
@@ -193,7 +226,9 @@ writeFileSync(
           "Warmed shared-host Node measurements, not browser latency guarantees",
           "Nine-sample nearest-rank p95 is the maximum",
           "Unordered LIMIT/DISTINCT checks existing stable source order, not a general SQL ordering guarantee",
-          "matchedRowIds is total eager matches before, consumed validated matches after; sourceRows counts emitted frames in both",
+          planner
+            ? "Before is P1C-1 streaming; current streaming field includes planner-selected scans. Planning prefix reads are reported separately from sourceRows."
+            : "matchedRowIds is total eager matches before, consumed validated matches after; sourceRows counts emitted frames in both",
         ],
       },
       sizes,

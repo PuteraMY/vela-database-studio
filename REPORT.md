@@ -1,8 +1,18 @@
 # VELA delivery and skills integration report
 
-Verification finalized on 2026-11-13. **P0 through P1C-1 are locally verified. Safe single-table equality SELECT now uses explicit B+trees; other queries retain P0 scans. General optimization, P2 and P3 remain unimplemented. The full original project is not finished.**
+Verification finalized on 2026-11-13. **P0 through P1C-2A are locally verified. Safe single-table equality SELECT now uses explicit B+trees; other queries retain P0 scans. General optimization, P2 and P3 remain unimplemented. The full original project is not finished.**
 
-## P1C-1 streaming execution checkpoint
+## P1C-2A conservative planning checkpoint
+
+Added one bounded-work access decision after unchanged equality eligibility. On tables with at least 1,024 rows, non-UNIQUE literal LIMIT 1 with absent/literal-zero OFFSET and no DISTINCT/sorting/grouping/aggregate may use a scan only after a matching value is observed within eight initial rows. UNIQUE, missing/late keys, larger LIMIT/OFFSET and other shapes retain established streaming/fallback paths. The probe uses existing SQL comparison semantics; original WHERE and downstream execution remain intact. It neither scans the entire table nor estimates total cardinality/time. Trace reports reason, table rows, actual prefix reads and the proven scan-row bound separately from executor counters.
+
+Local verification: skills/typecheck/lint/build, **682/682 unit tests**, **66/66 production browser tests**, curated **100/100**, fuzz **5000/5000**, all passing. New tests cover decisions, bounded reads, NULL/text/offset/mutations, real B+tree use/non-use and SQLite/reference-scan values. The prior 1,000 seeded comparisons and all streaming tests remain passing. Evidence: `evidence/p1c2a-verification.json`; command details are in PROGRESS.md.
+
+100k duplicate LIMIT 1 median (P1C-1 / planned / forced scan): **0.497 / 0.252 / 0.228 ms**. Measured regressions are retained: duplicate equality without LIMIT rose from **62.157 to 79.531 ms**, and aggregate LIMIT 1 from **46.271 to 48.127 ms**. Both retain indexed execution; this run does not establish the cause, and no universal speedup is claimed. All unique/duplicate/no-LIMIT/missing and control timings are in BENCHMARK.md. The positive scan bound is deterministic, but not proof that this path is universally fastest. Prefix probing adds bounded overhead on misses; thresholds are not calibrated, tiny-table opportunities and broader LIMIT/ORDER/DISTINCT planning remain outside scope. This is not a full cost-based optimizer.
+
+Branch `feat/vela-p1c2a-cost-aware-planner` starts at verified P1C-1 `8805cacd2ee207540c09a212cb3f770a251864e3`; stacked review targets P1C-1 and preserves PRs #1–#5/main. No subagents/new skills/dependencies/services, merge/deployment or infrastructure changes. Stop at P1C-2A. After the weekly reset, P1C-2B should validate/calibrate the bounded policy on clustered/random/skewed distributions before any broader access rules. Remote CI is reported with the PR, separately from local checks.
+
+## P1C-1 streaming execution checkpoint (historical)
 
 Eligible equality SELECT now streams the existing exact-bounded B+tree cursor and validated current rows, retaining stable-ID order, WHERE/projection and authoritative scan fallback. LIMIT/OFFSET counts qualifying downstream output; DISTINCT counts distinct results; sorting/grouping/aggregates consume required full input. Operator completion/return/error closes the cursor chain and prevents reuse. Trace lookupCalls counts cursor opens; matchedRowIds counts consumed validated entries, not unread key cardinality. Eligibility, storage/DML/read algorithms, Worker protocol and UI remain unchanged.
 
@@ -83,14 +93,14 @@ This continuation corrected virtual-spacer paint/layout shifts, graph clipping, 
 
 | Executed command/check | Result |
 | --- | --- |
-| `npm run verify` | Skill integrity, strict typecheck, lint, 658/658 unit tests and production build passed; no emitted warnings/errors. |
-| `npm run test:production` | 66/66 passed in the P1C-1 full production run; zero skipped/flaky/unexpected cases. |
+| `npm run verify` | Skill integrity, strict typecheck, lint, 682/682 unit tests and production build passed; no emitted warnings/errors. |
+| `npm run test:production` | 66/66 passed in the P1C-2A full production run; zero skipped/flaky/unexpected cases. |
 | `npm run curated` | 100/100 hand-written expected result sets verified in VELA and SQLite. |
 | `npm run fuzz` | 5,000/5,000 matched (100%), seed 355866, 25 randomized schemas, 20 P0 query categories. |
 | `npm audit --json` (historical P0) | Zero known advisory findings at that run; initial audit had 2 critical and 8 moderate. |
 | `npx tsx tools/inspect-ui.ts` (historical P0) | 360/390/768/1100/1440 layouts have no document/body horizontal overflow; no collected page/console errors or warnings. |
 | `npx tsx tools/browser-profile.ts` (historical P0) | Real production Worker/result/scroll measurements, zero collected errors; limitations below. |
-| `npm run benchmark:streaming` | Exact predecessor/current/scan assertions passed, source hash unchanged; LIMIT improves, early-match scans can still win. |
+| `npm run benchmark:planner` | Exact P1C-1/planned/scan assertions passed, source hash unchanged; all regressions/controls retained in BENCHMARK.md. |
 
 The fuzzer's initial match rate was **98.44% (4,922/5,000)**. All 78 observed mismatches were fixed: REAL division 40, Unicode LIKE 20, SUBSTR bounds 13, boolean IS predicates 5. The final run has no unresolved mismatches **within its generated subset**. It excludes P3 subqueries, CTEs, set operations/windows and P1/P2 systems. Unsupported probes are recorded separately, never counted as matching errors. Ordered cell comparison uses a 1e-10 floating tolerance and excludes labels. This is not universal SQLite compatibility: strict stored types, JavaScript numeric limits and limited date formats intentionally differ. The comparison UI test demonstrates one known unsupported `%j` date format instead of concealing it.
 
@@ -129,7 +139,7 @@ Playwright tests, security changes, UI implementation and final documents were r
 - Strict storage types and IEEE-754 numbers differ from SQLite affinity/64-bit integers. Date functions implement a documented small UTC subset. Arbitrary SQL compatibility is not promised by the 100% sampled match rate.
 - Only Chromium was exercised. Field performance, real-device behavior, full assistive-technology review and hosted security-header delivery are not verified.
 
-This checkpoint stops at P1C-1. P1C-2 requires a new instruction before broader planning or access rules. P2 and P3 remain ordered after verified P1.
+This checkpoint stops at P1C-2A. P1C-2B requires a new instruction before further calibration or access rules. P2 and P3 remain ordered after verified P1.
 
 ## Release assessment
 

@@ -14,6 +14,7 @@
     "fuzz": "tsx tools/fuzz.ts",
     "benchmark": "tsx tools/benchmark.ts && tsx tools/benchmark-indexed-select.ts",
     "benchmark:streaming": "tsx tools/benchmark-streaming-index.ts",
+    "benchmark:planner": "tsx tools/benchmark-streaming-index.ts --planner",
     "curated": "tsx tools/curated.ts",
     "skills:verify": "python3 scripts/validate_skills.py && python3 scripts/verify_skill_sources.py",
     "test:production": "VELA_E2E_PRODUCTION=1 playwright test",

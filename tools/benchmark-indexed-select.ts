@@ -127,7 +127,10 @@ for (const size of [1000, 10000, 100000]) {
       assert.ok(source.access);
       assert.equal(
         source.access.kind,
-        mode === "auto" ? "index-equality" : "table-scan",
+        mode === "auto" &&
+          !(size >= 1024 && workload.name === "ten-percent key with LIMIT 1")
+          ? "index-equality"
+          : "table-scan",
       );
       if (source.access.kind === "index-equality")
         assert.equal(source.access.lookupCalls, 1);

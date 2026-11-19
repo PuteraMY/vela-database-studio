@@ -4,7 +4,7 @@
 
 Work alone. Complete and verify P0 (engine + studio) before P1 (pages, B+tree, optimizer), then P2 (transactions, WAL, MVCC), then P3 (advanced SQL). Never represent a placeholder as a completed feature. Record scope decisions in DECISIONS.md and commands/results in PROGRESS.md and TESTING.md. Commit each completed tier or major feature.
 
-Current authorized milestone: P1C-1 only, on `feat/vela-p1c1-streaming-index`, based on verified P1B-2B commit `f39ff56d8961ac556e953ecf80cff328c5721cd7`. Stream eligible equality SELECTs through the existing index cursor, preserving WHERE/downstream semantics and scan fallback; close cursors on LIMIT, completion and errors. Preserve storage, DML, Worker protocol and UI. Stop after verification and a stacked PR targeting `feat/vela-p1b2b-indexed-select`; preserve PR #1–#4 and their branches. No merge, rebase, force-push, deployment, cost optimizer, new range/join planning, WAL, MVCC or advanced SQL. No subagents.
+Current authorized milestone: P1C-2A only, on `feat/vela-p1c2a-cost-aware-planner`, based on verified P1C-1 commit `8805cacd2ee207540c09a212cb3f770a251864e3`. Add one conservative, observable access-path heuristic after existing equality eligibility; preserve streaming, SQL semantics and unsupported-query fallback. Work alone, no subagents. Stop after verification and a stacked PR targeting `feat/vela-p1c1-streaming-index`; preserve PR #1–#5. No merge/rebase/force-push/deployment, general optimizer, join/range planning, statistics infrastructure, P1C-2B, P2 or P3.
 
 ## Stack and commands
 
