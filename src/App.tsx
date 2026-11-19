@@ -36,6 +36,7 @@ export default function App() {
     [search, setSearch] = useState(""),
     [csv, setCsv] = useState(""),
     [count, setCount] = useState(10000);
+  const drawerTrigger = useRef<HTMLButtonElement>(null);
   const touch = useRef<{ x: number; y: number } | null>(null),
     toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   function notify(message: string) {
@@ -69,7 +70,14 @@ export default function App() {
         setModal((m) => (m === "command" ? null : "command"));
         setSearch("");
       }
-      if (e.key === "Escape") setDrawer(false);
+      if (
+        e.key === "Escape" &&
+        drawerTrigger.current?.getAttribute("aria-expanded") === "true" &&
+        !document.querySelector("dialog[open]")
+      ) {
+        setDrawer(false);
+        drawerTrigger.current.focus();
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -205,7 +213,9 @@ export default function App() {
         <div className="workspace-location">
           <button
             className="drawer-toggle icon-button"
-            aria-label="Buka skema"
+            ref={drawerTrigger}
+            aria-label={drawer ? "Sembunyikan skema" : "Buka skema"}
+            aria-controls="workspace-schema"
             aria-expanded={drawer}
             onClick={() => setDrawer(!drawer)}
           >
@@ -235,9 +245,7 @@ export default function App() {
             </select>
           </label>
           <span className="workspace-separator" />
-          <span className="workspace-description">
-            Teroka. Tanyakan. Fahami.
-          </span>
+          <span className="workspace-description">Ruang kerja setempat</span>
         </div>
         <div className="workspace-actions">
           <button
@@ -294,7 +302,11 @@ export default function App() {
             onClick={() => setDrawer(false)}
           />
         )}
-        <aside className="schema-panel" aria-label="Penjelajah skema">
+        <aside
+          id="workspace-schema"
+          className="schema-panel"
+          aria-label="Penjelajah skema"
+        >
           <Schema
             onImport={() => setModal("import")}
             onGenerate={() => setModal("generate")}
@@ -359,11 +371,8 @@ export default function App() {
             </div>
           </div>
           <div className="editor-caption">
-            <span>PERTANYAAN</span>
-            <span>
-              SQL<span className="caption-dot">·</span>
-              <span>VELA</span>
-            </span>
+            <h2>Pertanyaan SQL</h2>
+            <span>{s.sql.split("\n").length} baris</span>
           </div>
           <Editor />
           <div className="editor-footer">
@@ -371,9 +380,7 @@ export default function App() {
               <Icon name="bolt" size={12} />
               <kbd>Ctrl</kbd> + <kbd>Enter</kbd> untuk menjalankan
             </span>
-            <span>
-              {s.sql.split("\n").length} baris <i /> UTF-8
-            </span>
+            <span>UTF-8</span>
           </div>
         </section>
         <section className="results-panel" aria-label="Ruang hasil">
