@@ -286,6 +286,9 @@ export function Results({
           </div>
           <div
             className="table-scroll"
+            role="region"
+            aria-label="Jadual hasil"
+            tabIndex={0}
             ref={scroller}
             onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
           >

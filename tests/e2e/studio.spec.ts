@@ -291,6 +291,29 @@ test("comparison matches empty SELECT results", async ({ page }) => {
     timeout: 20000,
   });
 });
+test("wide results can be scrolled from a keyboard Tab stop", async ({
+  page,
+}) => {
+  const columns = Array.from({ length: 20 }, (_, i) => `${i} AS lajur_${i}`);
+  await run(page, `SELECT ${columns.join(", ")};`);
+  await showResults(page);
+  const grid = page.getByRole("region", { name: "Jadual hasil" });
+  await expect(
+    grid.getByRole("table", { name: "Hasil pertanyaan" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Eksport JSON", exact: true }).focus();
+  await page.keyboard.press("Tab");
+  await expect(grid).toBeFocused();
+  await page.keyboard.press("ArrowRight");
+  await expect
+    .poll(() => grid.evaluate((el) => el.scrollLeft))
+    .toBeGreaterThan(0);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(await page.evaluate(() => innerWidth));
+  await page.keyboard.press("Tab");
+  await expect(grid.getByRole("button", { name: /^lajur_0/ })).toBeFocused();
+});
 test("100k results are virtualized and can scroll to the final row", async ({
   page,
 }) => {
