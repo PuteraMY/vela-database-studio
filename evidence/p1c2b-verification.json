@@ -1,0 +1,128 @@
+{
+  "milestone": "P1C-2B verified investigation; no production fix",
+  "baseCommit": "c83da1883d101c3232857d13f047cc478ccaa8d6",
+  "branch": "feat/vela-p1c2b-planner-calibration",
+  "prBase": "feat/vela-p1c2a-cost-aware-planner",
+  "verifiedAt": "2026-11-19T08:25:33.470293+00:00",
+  "basePR": {
+    "number": 6,
+    "base": "feat/vela-p1c1-streaming-index",
+    "head": "c83da1883d101c3232857d13f047cc478ccaa8d6",
+    "checkedStatus": "OPEN",
+    "verifiedSuccessfulRunIds": [
+      43429440133,
+      44450261001
+    ]
+  },
+  "commands": {
+    "npx vitest run tests/planner-calibration.test.ts tests/access-plan.test.ts tests/streaming-index.test.ts": {
+      "exitCode": 1,
+      "passed": 84,
+      "failed": 2,
+      "cause": "New OR/LIMIT SQLite comparison assumed unspecified row order; fixed test with ORDER BY id. No engine change."
+    },
+    "npx vitest run tests/planner-calibration.test.ts": {
+      "exitCode": 0,
+      "passed": 26,
+      "seconds": 8.74
+    },
+    "npm run verify": {
+      "exitCode": 0,
+      "skills": "8 entrypoints + 1 support/license hashes",
+      "typecheck": "passed",
+      "lint": "passed",
+      "unitPassed": 708,
+      "unitFiles": 14,
+      "unitSkipped": 0,
+      "unitSeconds": 90.09,
+      "buildSeconds": 3.25
+    },
+    "npm run test:production": {
+      "exitCode": 0,
+      "startTime": "2026-11-19T08:21:31.449Z",
+      "duration": 78840.226,
+      "expected": 66,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "npm run curated": {
+      "exitCode": 0,
+      "total": 100,
+      "passed": 100,
+      "failed": 0
+    },
+    "npm run fuzz": {
+      "exitCode": 0,
+      "seed": 355866,
+      "total": 5000,
+      "matched": 5000,
+      "mismatches": 0,
+      "matchRate": 1,
+      "elapsedMs": 2864.54138,
+      "schemaCount": 25
+    },
+    "npm audit --json": {
+      "exitCode": 0,
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      }
+    },
+    "npm run benchmark:calibration": {
+      "status": "completed artifact and all 12 worker results recovered after session interruption; hashes reverified, no rerun",
+      "processTrials": 12,
+      "measuredQueries": 1800,
+      "warmupQueries": 1200,
+      "finishedAt": "2026-11-19T03:36:33.020Z",
+      "sourceAtStart": "ac82957f4426c260dff1ef3325e3f1eece3b1fa8e8fff1b229c8aa94241b2ca7",
+      "sourceAtEnd": "ac82957f4426c260dff1ef3325e3f1eece3b1fa8e8fff1b229c8aa94241b2ca7",
+      "harnessHash": "80f03c16bfff09202b6a5dbfbc714e823584e9b4445680e5b266ae67923313f0",
+      "rawSha256": "ac43a98828f8aaefe883a7ece7f6bed7835a47245d3b7d0bdb91ea05f09ac9c7"
+    },
+    "git diff --check": {
+      "exitCode": 0
+    }
+  },
+  "newCoverage": {
+    "unitCases": 26,
+    "sqlMatrixCases": 144,
+    "autoRepeatsPerCase": 3,
+    "existingSeededIndexedSQLComparisons": 1000,
+    "seeds": [
+      17,
+      2909,
+      335085
+    ]
+  },
+  "engineUnchangedFromBase": true,
+  "noDelegation": true,
+  "changedCodeHashes": {
+    "tests/planner-calibration.test.ts": "8e3f1092dfd5e943e5ebc1980e226e0ba57308ad801ab77112b911a381d058ab",
+    "tools/benchmark-planner-calibration.ts": "80f03c16bfff09202b6a5dbfbc714e823584e9b4445680e5b266ae67923313f0",
+    "package.json": "8d602a32796135cbff96596b05e9d212498ebc5ea1abce41cc6622488925c6f0"
+  },
+  "evidenceHashes": {
+    "evidence/p1c2b-calibration.json": "be23f28d5a5399a3328bfd34fdfbfa3008048f4deb4246c00f023b2159844fa3"
+  },
+  "localLogHashes": {
+    "artifacts/p1c2b-focused.log": "3d039f7b433faa9b916e7c5d60ed7d37bdae4a1cc4a546445ae5fcdcd4315500",
+    "artifacts/p1c2b-focused-final.log": "edb55605aa6182420502cba38423be9ab31ee7ceed225c6ce4db8f12183ef686",
+    "artifacts/p1c2b-verify.log": "bfe4d04d842ae0cef1301836c41357c8218242db07592c00ea4df52e3515d1bf",
+    "artifacts/p1c2b-production.log": "45eb4860304164d1f177a3b5ae86ed9c8bad5d515ee76cab74060f1a8557489d",
+    "artifacts/p1c2b-curated.log": "61863f780eab7ffee5bc54391d75c6fbecc3d61d02a473f8705602390bc01760",
+    "artifacts/p1c2b-fuzz.log": "4e26f6cf810a68953b298f2fd176eadea55b040d001017f68e5edbaf127028f1",
+    "artifacts/p1c2b-calibration.log": "64a825813eba186cbfd2d4eccbbbbdf6cacc1a8fb9be4c2e50fc1a20ab36c567"
+  },
+  "limitations": [
+    "Historical regression cause unconfirmed; A/A process variation observed, no GC/JIT attribution",
+    "No production changes or recalibrated thresholds; no claimed speedup",
+    "Node shared-host 100k fixture timings, no Worker/DOM transfer",
+    "Scoped calibration benchmark executed; unrelated legacy point/join benchmarks not rerun",
+    "Remote candidate CI is reported separately on the PR"
+  ]
+}

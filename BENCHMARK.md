@@ -1,5 +1,58 @@
 # Measured performance
 
+## P1C-2B regression investigation (2026-11-19)
+
+The historical no-LIMIT change (62.157 → 79.531 ms) was **not reproduced consistently**. A new equivalent comparison gives 49.139 ms for exact P1C-1 and 45.355 ms for exact P1C-2A. The candidate engine is byte-identical to P1C-2A, yet measures 54.934 ms: the A/A control demonstrates substantial process/run variation. The historical cause remains unconfirmed; no execution fix, threshold change or speedup is claimed. GC, JIT and host scheduling were not separately attributed.
+
+`npm run benchmark:calibration` extracts both exact commits from local git, then runs four modes in fresh **sequential** Node processes: P1C-1, P1C-2A, candidate and candidate forced scan. Three process trials rotate mode order; each workload has 10 warmups and 15 measured queries per trial (45 retained samples per mode). Identical 100,000-row fixtures have id=i+1, k=i%10, v=floor(i/10)%5, an explicit UNIQUE id index and non-unique k index. Complete results and actual source kind are asserted after every query; all assertions passed. No build/test/browser suite ran concurrently. Short file inspection/formatting commands and shared-host activity were not controlled.
+
+Wall timing includes parsing, binding, planning, cursor/scan, resolution, WHERE, downstream operators and result materialization. Setup/index construction, assertions and Worker/DOM transfer are excluded. No outliers are discarded and no forced GC is used. Reported p95 is nearest-rank over 45 samples, variance is sample variance (N−1), and all per-trial medians/raw samples are retained. These are lab observations, not confidence intervals or field tail-latency guarantees. The old two-warmup/nine-sample same-process harness held three databases; do not attribute changes between methodologies to engine improvements.
+
+Environment: Node v24.22.1, Linux 6.18.57 x64, Intel Xeon Platinum 8573C; three visible CPUs, available parallelism two, CPU quota 200000/100000, memory limit 8 GiB. Source hashes matched before/after and P1C-2A/candidate hashes are identical. [Compact evidence](evidence/p1c2b-calibration.json) preserves all wall/engine/source samples, access evidence, diagnostics and hashes; full artifact: `artifacts/p1c2b-calibration.json`.
+
+| 100k workload | P1C-1 median / p95 ms | P1C-2A median / p95 ms | Candidate median / p95 ms | Forced scan median / p95 ms |
+| --- | ---: | ---: | ---: | ---: |
+| unique equality | 0.159 / 0.542 | 0.160 / 0.460 | 0.172 / 0.544 | 117.775 / 228.696 |
+| duplicate LIMIT 1 | 0.136 / 0.471 | 0.113 / 1.313 | 0.068 / 0.160 | 0.053 / 0.302 |
+| duplicate without LIMIT | 49.139 / 83.851 | 45.355 / 51.794 | 54.934 / 93.497 | 141.452 / 284.878 |
+| missing LIMIT 1 | 0.119 / 0.303 | 0.173 / 0.431 | 0.156 / 0.636 | 120.520 / 256.874 |
+| duplicate LIMIT 1 OFFSET 25 | 0.283 / 0.560 | 0.275 / 0.602 | 0.315 / 0.736 | 0.383 / 0.744 |
+| duplicate LIMIT 10 OFFSET 100 | 0.672 / 1.733 | 0.721 / 1.240 | 0.649 / 1.231 | 1.541 / 2.128 |
+| ordered LIMIT 1 | 51.708 / 88.626 | 48.297 / 65.249 | 52.897 / 70.640 | 135.636 / 264.882 |
+| DISTINCT LIMIT 3 OFFSET 1 | 0.133 / 0.264 | 0.160 / 0.333 | 0.168 / 0.420 | 0.085 / 0.175 |
+| aggregate LIMIT 1 | 47.658 / 55.173 | 44.566 / 67.210 | 51.675 / 82.049 | 127.902 / 312.831 |
+| late prefix LIMIT 1 | 0.196 / 0.885 | 0.124 / 0.220 | 0.129 / 0.436 | 0.073 / 0.217 |
+
+| Workload sample variance (ms²) | P1C-1 | P1C-2A | Candidate | Scan |
+| --- | ---: | ---: | ---: | ---: |
+| unique equality | 0.029621 | 0.018181 | 0.026054 | 1362.726914 |
+| duplicate LIMIT 1 | 0.023954 | 0.295536 | 0.001990 | 1.413989 |
+| duplicate without LIMIT | 281.150362 | 16.024546 | 542.924561 | 2911.475199 |
+| missing LIMIT 1 | 0.012029 | 0.010223 | 0.026544 | 4920.790247 |
+| duplicate LIMIT 1 OFFSET 25 | 0.019141 | 0.031357 | 0.024964 | 0.017013 |
+| duplicate LIMIT 10 OFFSET 100 | 0.634807 | 0.082095 | 0.074510 | 0.084892 |
+| ordered LIMIT 1 | 174.679189 | 61.727803 | 170.695386 | 4840.906611 |
+| DISTINCT LIMIT 3 OFFSET 1 | 0.002154 | 0.005657 | 0.010000 | 0.002194 |
+| aggregate LIMIT 1 | 47.152900 | 302.082825 | 657.653238 | 4810.144015 |
+| late prefix LIMIT 1 | 0.073113 | 0.001404 | 0.009981 | 0.009726 |
+
+No-LIMIT trial medians (ms): p1c1 51.191, 45.764, 52.307; p1c2a 42.957, 47.218, 44.687; candidate 49.758, 63.231, 58.990; scan 130.350, 201.561, 134.749.
+
+Candidate measurements are worse than P1C-2A for no-LIMIT, unique, OFFSET 25, ORDER BY, DISTINCT, aggregate and late-prefix medians. P1C-2A also trails P1C-1 for missing-key and DISTINCT medians. These observations are retained; no universal improvement or causal interpretation is claimed. In particular, the unchanged A/A no-LIMIT difference is about 21%, preventing calibration from one aggregate median.
+
+Isolation evidence: no-LIMIT chooses `retain-query-shape`, performs zero prefix row reads, consumes exactly 10,000 index entries and calls the planner once. Cursor, B+tree, row resolver, iterator, eligibility and evaluator sources are identical across the two historical commits. Source traces remain inclusive (cursor/resolution/qualification together); nested operator times must not be summed or treated as isolated planner timing.
+
+| Separate diagnostic, pooled median ms | P1C-1 | P1C-2A | Candidate |
+| --- | ---: | ---: | ---: |
+| resolve one live row | 0.000049 | 0.000027 | 0.000036 |
+| cursor plus resolution, 10000 rows | 18.070913 | 19.459010 | 19.245539 |
+| planner only without LIMIT | not present | 0.000648 | 0.000683 |
+| planner only LIMIT 1 | not present | 0.001001 | 0.000908 |
+
+Diagnostics run after SQL measurements with five warmup batches and 15 measured batches per process. Planner and resolver samples average 10,000 calls; cursor samples traverse one complete 10,000-row equality range. Checksums are checked after timing; planner diagnostics include the access-kind assertion. Planner parsing is outside these diagnostic timers. Batched per-call distributions are not individual-call p95 and are never subtracted from end-to-end SQL timings. The roughly 0.00065 ms planner-only no-LIMIT median does not substantiate the historical 17 ms gap; the full historical cause remains inconclusive.
+
+Calibration decision: retain the 1,024-row/eight-value prefix heuristic. It proves a bounded early scan only for the supported non-unique literal LIMIT 1 shape, not global cardinality or optimal latency. Wider LIMIT/OFFSET, blocking queries and late/missing keys keep established paths. Any next calibration needs an explicit new workload-backed hypothesis; range/join planning, statistics and P2/P3 are outside this checkpoint.
+
 ## P1C-2A bounded planner (2026-11-13)
 
 `npm run benchmark:planner` reuses the existing harness and extracts exact P1C-1 commit `8805cacd2ee207540c09a212cb3f770a251864e3` from local git. Same-process predecessor indexed/current planned/forced-scan SQL uses identical 100k rows, explicit UNIQUE id and non-unique k indexes. Data: id=i+1, k=i%10, v=floor(i/10)%5. Two warmups and nine measured runs per mode/workload, rotating order. Complete results and actual selected source are asserted outside timing. Includes parsing, binding, planning/probes, access, filtering, projection/downstream and result materialization; excludes setup/index construction, assertions, Worker transfer and DOM. No concurrent build/browser suite. Engine hashes stayed unchanged.

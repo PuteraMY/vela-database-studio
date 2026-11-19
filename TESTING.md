@@ -1,5 +1,19 @@
 # Testing record
 
+## P1C-2B verification (2026-11-19)
+
+`npm run verify` passed skills integrity (eight entrypoints plus license hash), strict TypeScript, ESLint, **708/708 unit tests across 14 files**, zero skipped (90.09s), and production build (3.25s). `npm run test:production` passed **66/66** in 78.84s, zero skipped/flaky/unexpected. Existing browser cases cover 360/768/1100/1440 layouts, desktop/mobile Worker execution, actual access traces, NULL/index-drop fallback and console/header checks. No application/config edits occurred during production tests.
+
+Added 26 tests in `tests/planner-calibration.test.ts`: zero row reads for ten retained shapes, exact threshold/prefix boundaries, clustered controls plus seeded uniform/skewed distributions, stable repeated decisions, physical cursor use without eager lookup, unique/missing/NULL queries, OFFSET, ORDER BY/DISTINCT/aggregate behavior, unsupported OR/AND fallback and large-table cursor cleanup/invalidation. The distribution matrix contains 144 complete-result comparisons to both forced scan and SQLite, with each automatic execution repeated three times; existing 1,000 seeded indexed/scan/SQLite comparisons remain active. No engine behavior changed.
+
+Focused command `npx vitest run tests/planner-calibration.test.ts tests/access-plan.test.ts tests/streaming-index.test.ts` initially passed 84/86. Two new comparisons incorrectly assumed SQLite's unordered `OR ... LIMIT 1` chose the same row as an insertion-order scan. The test now explicitly orders by id; engine code was correct and unchanged. `npx vitest run tests/planner-calibration.test.ts` then passed **26/26** (8.74s), followed by the passing full suite. Initial and final logs are retained; no tests were skipped or assertions relaxed.
+
+`npm run curated` passed **100/100**; `npm run fuzz` passed **5000/5000**, seed 355866, zero mismatches; `npm audit --json` reported zero advisories. The standalone fuzzer covers P0 SQL; planner-specific equivalence is exercised in Vitest, not inferred from that fuzzer. Strict mixed-type differences from SQLite remain documented and outside the compatible comparison matrix.
+
+`npm run benchmark:calibration` completed all 12 process trials and full-output/access assertions for 1,800 measured SQL executions plus warmups. Baselines are exact historical commits; candidate engine is byte-identical to P1C-2A. All samples, p95, sample variance, per-trial medians and separate planner/cursor/resolver diagnostics are preserved. Completed benchmark artifacts were recovered after interruption and source/harness hashes reverified; the valid expensive run was not repeated. BENCHMARK.md records methodology, regressions and the inconclusive historical cause. No speculative production fix was introduced. The new scoped benchmark replaces unrelated legacy benchmark reruns.
+
+Evidence: `evidence/p1c2b-verification.json`, `evidence/p1c2b-calibration.json`; full logs/JSON remain under gitignored `artifacts/p1c2b-*`. No new dependencies, services or subagent work. Skills guidance was manually read; installation/catalog registration is not claimed. Remote CI is reported separately with the PR.
+
 ## P1C-1 verification
 
 `npm run verify` passed skill integrity, strict typecheck, lint, **658/658 unit tests across 12 files**, zero skipped (55.61s), and production build (3.14s). The 36 new streaming tests cover exact pull counts for LIMIT/OFFSET (including zero/negative/exhausted bounds), projection/aliases, empty/missing keys, DML/index recreation, residual filtering, fallback, DISTINCT, sorting, grouping/HAVING/aggregates, actual cursor cleanup, invalidation, stale references and closed-operator reuse. Existing physical-use tests now spy on B+tree cursor traversal and reject calls to the eager lookup API. All previous tests, including 1,000 seeded auto/scan/SQLite comparisons, remain active.

@@ -1,6 +1,6 @@
 # Progress
 
-Current milestone: P1C-2A conservative access planning on `feat/vela-p1c2a-cost-aware-planner`, based on verified P1C-1 `8805cacd2ee207540c09a212cb3f770a251864e3`. Implementation and local verification are complete. Target P1C-1; preserve PRs #1–#5/main.
+Current milestone: P1C-2B planner investigation and regression validation on `feat/vela-p1c2b-planner-calibration`, based on verified P1C-2A `c83da1883d101c3232857d13f047cc478ccaa8d6`. Local verification is complete; the historical regression has no confirmed cause and no production fix is claimed. Target P1C-2A; preserve PRs #1–#6/main.
 
 | Tier | Status | Verified boundary |
 | --- | --- | --- |
@@ -11,11 +11,21 @@ Current milestone: P1C-2A conservative access planning on `feat/vela-p1c2a-cost-
 | P1B-2B — safe indexed SELECT | Implemented and locally verified | Single-column equality, original predicate, deterministic selection, truthful trace and P0 fallback. |
 | P1C-1 — streaming equality | Implemented and locally verified | Existing exact cursor, downstream LIMIT/OFFSET, accurate consumed-entry trace and recursive cleanup. |
 | P1C-2A — bounded access planning | Implemented and locally verified | Positive bounded-prefix evidence may select early scan; all other eligible queries retain streaming indexes. |
-| Remaining P1 | Not started | No optimizer/statistics, estimated EXPLAIN, indexed joins or tree visualizer. |
+| P1C-2B — planner investigation | Locally verified investigation checkpoint | Repeated four-way measurements, A/A control and 26 additional regression tests; production engine/thresholds unchanged. |
+| Remaining P1 | Not started | No general optimizer/statistics, estimated EXPLAIN, indexed joins or tree visualizer. |
 | P2 — transactions, WAL, MVCC | Not started | Snippet IndexedDB storage is not database persistence. Transaction commands are rejected. |
 | P3 — advanced SQL | Not started | No subqueries, CTEs, set operations or windows. Fuzz/benchmark tooling is available for P0. |
 
-## P1C-2A verified checkpoint
+## P1C-2B verified investigation checkpoint
+
+- Verified the exact P1C-2A commit, remote branch and PR #6 ancestry/checks before branching. Added `benchmark:calibration` and 26 regression tests; all production engine/UI/storage/Worker code, dependencies and skill sources are unchanged. No subagents.
+- Historical no-LIMIT 62.157 → 79.531 ms was not reproduced consistently. New P1C-1/P1C-2A/candidate medians: **49.139 / 45.355 / 54.934 ms**. P1C-2A and candidate have identical engine hashes; the A/A variation prevents a causal calibration claim. Keep the existing thresholds and accurate execution trace. Detailed medians/p95/variance and all samples are in BENCHMARK.md / `evidence/p1c2b-calibration.json`.
+- Focused testing initially found two test-only assumptions about SQLite's unordered OR/LIMIT output. Adding explicit ORDER BY corrected these; the final new suite passed **26/26**. `npm run verify` then passed skills integrity/typecheck/lint, **708/708 units in 14 files** (90.09s), and build (3.25s).
+- `npm run test:production`: **66/66** (78.84s), zero skipped/flaky/unexpected. `npm run curated`: **100/100**. `npm run fuzz`: **5000/5000**, seed 355866, zero mismatches. `npm audit --json`: zero advisories. The added distribution tests compare 144 SQL cases to scan/SQLite and repeat each auto decision three times, alongside the existing 1,000 seeded indexed-SQL comparisons.
+- `npm run benchmark:calibration` completed 12 fresh sequential processes: exact P1C-1, exact P1C-2A, unchanged candidate, forced scan; 100k rows, three trials, 10 warmups/15 measured queries per workload/trial. All 1,800 measured queries passed full-result/access assertions. Completed artifacts survived session interruption and their engine/harness hashes were reverified, so this expensive run was reused. No production code changed after measurement. Scoped planner benchmarking replaces unrelated legacy point/join reruns.
+- Logs/hashes: `artifacts/p1c2b-*`, `evidence/p1c2b-verification.json`. GitHub CI is separate from these local results and reported on the stacked PR. Stop after this investigation checkpoint; no merge/deploy, general optimizer or P2/P3. Recommended next work requires authorization: controlled profiling/reproducibility before broader planner rules.
+
+## P1C-2A verified checkpoint (historical)
 
 - One bounded-work decision after unchanged eligibility: for large non-unique equality LIMIT 1, choose scan only after a match is observed in at most eight initial values; otherwise retain streaming. No global selectivity estimate/full scan for planning. Trace explains decisions and separates prefix reads from executor rows.
 - `npm run verify` passed skills/typecheck/lint, **682/682** units (24 new), build. Focused 165/165 preceded the last text case. Production **66/66**, curated **100/100**, fuzz **5000/5000** passed, zero final skips/flaky cases. All original streaming tests and 1,000 seeded SQL comparisons remain passing. One initial test-only union property type error was corrected before final gates.
