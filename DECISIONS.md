@@ -1,5 +1,14 @@
 # Decisions
 
+## P1C-2B investigation and retained calibration
+
+- Start from exact P1C-2A `c83da1883d101c3232857d13f047cc478ccaa8d6`, verified against local history, remote branch and open PR #6 targeting P1C-1 (both existing checks successful). The explicit user confirmation authorizes P1C-2B despite the superseded scope paragraph. Work alone on `feat/vela-p1c2b-planner-calibration`; preserve PRs #1–#6/main and target P1C-2A.
+- Investigate before modifying production: archive exact P1C-1/P1C-2A engines and compare fresh sequential processes with identical fixtures, rotating order, three trials, ten warmups and fifteen SQL samples per workload. Keep an unchanged candidate as an A/A control, all samples, sample variance, p95, trace counts and separate batched planner/cursor/resolver diagnostics. No new dependencies or engine instrumentation.
+- The historical no-LIMIT regression cannot be assigned a confirmed cause: new P1C-1/P1C-2A medians are 49.139/45.355 ms, while the byte-identical candidate measures 54.934 ms. No-LIMIT does zero prefix reads, with approximately 0.00065 ms batched planner-only work. Per-row execution files are identical. Process variation is observed; specific GC/JIT/scheduling causes are not proven. Do not invent a fix or label different measurements of identical code as an optimization.
+- Retain the existing deterministic thresholds (1,024 rows, eight probes) and all eligibility/execution behavior. Tests protect no-probe shapes, boundaries, seeded clustered/uniform/skewed distributions, repeated decisions, physical cursor use, full-result scan/SQLite equivalence, NULL/fallback and cursor cleanup/invalidation. SQLite comparisons require explicit ORDER BY when multiple keys make LIMIT ordering differ; unordered equality fixtures only demonstrate the existing insertion/row-ID order.
+- Apply the shared [systematic-debugging guide](https://github.com/PuteraMY/PuteraMY-Agent-Skills/blob/main/.agents/skills/systematic-debugging/SKILL.md) as manually read development guidance. No claim of cloud registration/plugin installation; project-local locked skills remain untouched. No delegation, services, SQL syntax, UI, general optimizer or P2/P3 work.
+- This is a verified investigation/regression-coverage checkpoint, with no production performance fix. A future planner calibration needs a new, isolated, reproducible hypothesis and stronger environment controls before changing access rules. Do not infer global selectivity from the bounded prefix or remove correctness checks for benchmark gains.
+
 ## P1C-2A bounded access planning
 
 - Verified local/remote P1C-1 `8805cacd2ee207540c09a212cb3f770a251864e3` and open PR #5 before branching. The new request supersedes the former stop rule. Work alone; preserve PRs #1–#5. No shared skills/service/dependency changes, merge/deployment or P1C-2B work.
