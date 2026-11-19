@@ -773,6 +773,26 @@ button kbd {
   font-size: 9px;
   max-width: 116px;
 }
+.result-statement {
+  display: flex;
+  flex-shrink: 0;
+  padding: 4px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.result-statement select {
+  max-width: 100%;
+  min-height: 32px;
+}
+@media (max-width: 767px) {
+  .result-statement select {
+    min-height: 44px;
+  }
+}
+.table-scroll:focus-visible,
+.sql-editor:focus-within {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
 .table-scroll {
   overflow: auto;
   flex: 1;
