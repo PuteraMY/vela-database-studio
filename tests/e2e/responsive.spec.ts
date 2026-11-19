@@ -36,7 +36,17 @@ for (const width of [360, 768, 1100, 1440])
       await expect(
         page.getByRole("complementary", { name: "Penjelajah skema" }),
       ).toBeVisible();
-      await page.getByRole("button", { name: "Tutup skema" }).click();
+      const filter = page.getByRole("textbox", { name: "Cari jadual" });
+      await filter.fill("  PENDAFTARAN  ");
+      await expect(
+        page.getByRole("status", { name: "1 jadual" }),
+      ).toBeVisible();
+      await filter.fill("jadual_tidak_wujud");
+      await expect(page.getByText("Tiada jadual sepadan.")).toBeVisible();
+      await filter.press("Escape");
+      await expect(
+        page.getByRole("button", { name: "Buka skema" }),
+      ).toBeFocused();
       await expect(
         page.getByRole("complementary", { name: "Penjelajah skema" }),
       ).toBeHidden();
@@ -81,6 +91,28 @@ test("mobile swipe switches panels without page overflow", async ({ page }) => {
     page.getByRole("button", { name: "Hasil", exact: true }),
   ).toHaveAttribute("aria-current", "page");
   await expect(page.getByRole("table")).toBeVisible();
+});
+test("result sorting is exposed and resets between statements", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.locator(".result-summary")).toHaveCount(1);
+  await page
+    .getByRole("textbox", { name: "Editor SQL" })
+    .fill("SELECT 2 AS pertama; SELECT 1 AS kedua;");
+  await page.getByRole("button", { name: "Jalankan pertanyaan" }).click();
+  const header = page.getByRole("columnheader", { name: /^kedua/ });
+  await header.getByRole("button").click();
+  await expect(header).toHaveAttribute("aria-sort", "ascending");
+  await header.getByRole("button").click();
+  await expect(header).toHaveAttribute("aria-sort", "descending");
+  await page
+    .getByRole("combobox", { name: "Pernyataan hasil" })
+    .selectOption("0");
+  await expect(
+    page.getByRole("columnheader", { name: /^pertama/ }),
+  ).toBeVisible();
+  await expect(page.locator("th[aria-sort]")).toHaveCount(0);
 });
 test("reduced motion disables plan animation", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });

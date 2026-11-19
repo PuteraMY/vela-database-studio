@@ -80,14 +80,14 @@ export function Editor() {
             },
             ".cm-scroller": {
               fontFamily: '"JetBrains Mono", monospace',
-              lineHeight: "1.85",
+              lineHeight: "1.75",
               overflow: "auto",
             },
             ".cm-content": { padding: "20px 0" },
             ".cm-gutters": {
               backgroundColor: "transparent",
               border: "none",
-              color: "#606F86",
+              color: "#8795AB",
               paddingRight: "12px",
               minWidth: "42px",
             },

@@ -274,7 +274,12 @@ export function Results({
               <select
                 aria-label="Pernyataan hasil"
                 value={resultIndex < 0 ? results.length - 1 : resultIndex}
-                onChange={(e) => setResultIndex(Number(e.target.value))}
+                onChange={(e) => {
+                  setResultIndex(Number(e.target.value));
+                  setSort(null);
+                  setScrollTop(0);
+                  if (scroller.current) scroller.current.scrollTo(0, 0);
+                }}
               >
                 {results.map((_, i) => (
                   <option key={i} value={i}>
@@ -287,6 +292,9 @@ export function Results({
           <div
             className="table-scroll"
             ref={scroller}
+            tabIndex={0}
+            role="region"
+            aria-label="Kawasan hasil boleh tatal"
             onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
           >
             <table
@@ -298,7 +306,17 @@ export function Results({
                 <tr>
                   <th className="row-number">#</th>
                   {result.columns.map((name, i) => (
-                    <th key={`${name}-${i}`}>
+                    <th
+                      key={`${name}-${i}`}
+                      scope="col"
+                      aria-sort={
+                        sort?.column === i
+                          ? sort.desc
+                            ? "descending"
+                            : "ascending"
+                          : undefined
+                      }
+                    >
                       <button
                         onClick={() => {
                           setSort({
