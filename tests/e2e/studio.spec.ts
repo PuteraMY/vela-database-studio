@@ -58,6 +58,62 @@ test("runs SQL through worker and displays typed values and NULL", async ({
   ).toContainText("2.5");
   await expect(page.locator(".null-value")).toHaveText("NULL");
 });
+test("statement selection survives non-tabular output and resets grid sorting and scroll", async ({
+  page,
+}) => {
+  await run(
+    page,
+    "SELECT id FROM pelajar; CREATE TABLE uji_pilihan (id INTEGER); SELECT id FROM pelajar;",
+  );
+  await showResults(page);
+  const picker = page.getByRole("combobox", { name: "Pernyataan hasil" });
+  const grid = page.getByRole("region", { name: "Jadual hasil boleh ditatal" });
+  const header = grid.getByRole("columnheader", { name: "id", exact: true });
+  await expect(picker).toHaveValue("2");
+  await header.getByRole("button").press("Enter");
+  await expect(header).toHaveAttribute("aria-sort", "ascending");
+  await grid.press("PageDown");
+  await expect
+    .poll(() => grid.evaluate((element) => element.scrollTop))
+    .toBeGreaterThan(0);
+  await picker.selectOption("0");
+  await expect(header).not.toHaveAttribute("aria-sort");
+  await expect
+    .poll(() => grid.evaluate((element) => element.scrollTop))
+    .toBe(0);
+  await picker.selectOption("1");
+  await expect(
+    page.getByRole("heading", { name: "Pernyataan selesai" }),
+  ).toBeVisible();
+  await picker.selectOption("2");
+  await expect(grid).toBeVisible();
+});
+test("schema filtering preserves disclosures and preview focuses the editor", async ({
+  page,
+}) => {
+  if ((page.viewportSize()?.width ?? 1440) < 768) {
+    await page
+      .getByRole("navigation", { name: "Panel studio" })
+      .getByRole("button", { name: "Skema", exact: true })
+      .click();
+  }
+  const schema = page.getByRole("complementary", { name: "Penjelajah skema" });
+  const search = schema.getByRole("textbox", { name: "Cari jadual" });
+  await search.fill(" PENDAFTARAN ");
+  const table = schema.locator("details:visible");
+  await expect(table).toHaveCount(1);
+  await table.locator("summary").press("Enter");
+  await expect(table).not.toHaveAttribute("open");
+  await search.fill("tiada_jadual_ini");
+  await expect(schema.getByText("Tiada jadual sepadan.")).toBeVisible();
+  await search.fill("pendaftaran");
+  await expect(table).not.toHaveAttribute("open");
+  await table.locator("summary").press("Enter");
+  await table.getByRole("button", { name: "Buka pertanyaan" }).press("Enter");
+  const sql = page.getByRole("textbox", { name: "Editor SQL", exact: true });
+  await expect(sql).toBeFocused();
+  await expect(sql).toHaveText("SELECT * FROM pendaftaran LIMIT 100;");
+});
 test("keyboard shortcut runs a query", async ({ page }) => {
   await editor(page, "SELECT 42 AS jawapan;");
   await page.keyboard.press("Control+Enter");

@@ -46,6 +46,27 @@ export function Results({
     ),
     [scrollTop, setScrollTop] = useState(0);
   const scroller = useRef<HTMLDivElement>(null);
+  function resetScroll() {
+    setScrollTop(0);
+    scroller.current?.scrollTo(0, 0);
+  }
+  const statementPicker = results.length > 1 && (
+    <select
+      aria-label="Pernyataan hasil"
+      value={resultIndex < 0 ? results.length - 1 : resultIndex}
+      onChange={(event) => {
+        setResultIndex(Number(event.target.value));
+        setSort(null);
+        resetScroll();
+      }}
+    >
+      {results.map((_, i) => (
+        <option key={i} value={i}>
+          Pernyataan {i + 1}
+        </option>
+      ))}
+    </select>
+  );
   useEffect(() => {
     setSort(null);
     setScrollTop(0);
@@ -136,6 +157,9 @@ export function Results({
           </button>
         </div>
       </div>
+      {!busy && !error && tab === "hasil" && statementPicker && (
+        <div className="result-statement">{statementPicker}</div>
+      )}
       {error ? (
         <div className="error-state" role="alert">
           <Icon name="terminal" size={24} />
@@ -148,8 +172,8 @@ export function Results({
       ) : busy ? (
         <div className="panel-empty" role="status">
           <span className="loading-ring" />
-          <h3>Enjin sedang bekerja</h3>
-          <p>Pertanyaan dijalankan dalam Web Worker.</p>
+          <h3>Pertanyaan sedang dijalankan</h3>
+          <p>Hasil akan dipaparkan selepas pelaksanaan selesai.</p>
         </div>
       ) : tab === "mesej" ? (
         <div className="message-list">
@@ -270,22 +294,12 @@ export function Results({
               <Icon name="clock" size={13} />
               {result.ms.toFixed(2)} ms
             </span>
-            {results.length > 1 && (
-              <select
-                aria-label="Pernyataan hasil"
-                value={resultIndex < 0 ? results.length - 1 : resultIndex}
-                onChange={(e) => setResultIndex(Number(e.target.value))}
-              >
-                {results.map((_, i) => (
-                  <option key={i} value={i}>
-                    Pernyataan {i + 1}
-                  </option>
-                ))}
-              </select>
-            )}
           </div>
           <div
             className="table-scroll"
+            role="region"
+            aria-label="Jadual hasil boleh ditatal"
+            tabIndex={0}
             ref={scroller}
             onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
           >
@@ -298,19 +312,29 @@ export function Results({
                 <tr>
                   <th className="row-number">#</th>
                   {result.columns.map((name, i) => (
-                    <th key={`${name}-${i}`}>
+                    <th
+                      key={`${name}-${i}`}
+                      scope="col"
+                      aria-sort={
+                        sort?.column === i
+                          ? sort.desc
+                            ? "descending"
+                            : "ascending"
+                          : undefined
+                      }
+                    >
                       <button
                         onClick={() => {
                           setSort({
                             column: i,
                             desc: sort?.column === i ? !sort.desc : false,
                           });
-                          setScrollTop(0);
-                          if (scroller.current) scroller.current.scrollTop = 0;
+                          resetScroll();
                         }}
                       >
                         <span>{name}</span>
                         <span
+                          aria-hidden="true"
                           className={
                             sort?.column === i ? "sort-active" : "sort-icon"
                           }

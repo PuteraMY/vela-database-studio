@@ -301,6 +301,11 @@ export default function App() {
             onSelect={() => {
               setMobile("editor");
               setDrawer(false);
+              requestAnimationFrame(() =>
+                document
+                  .querySelector<HTMLElement>(".sql-editor .cm-content")
+                  ?.focus(),
+              );
             }}
           />
         </aside>
