@@ -1,5 +1,69 @@
 # Measured performance
 
+## P1C-2C controlled CPU/GC profiling (2026-11-19)
+
+**No engine or threshold change.** The controlled no-LIMIT comparison does not reproduce a reliable planner regression. P1C-2A/P1C-1 process-median ratio is **0.962 (conditional 95% bootstrap interval 0.884–1.048)**. The byte-identical P1C-2B/P1C-2A A/A control is **1.027 (0.962–1.098)**. Both intervals contain 1. Current allocation/GC work is substantial and common to all three snapshots; the historical 62.157 → 79.531 ms cause remains unproven.
+
+Run `npm run profile:planner` on Linux with Node 24, `taskset`, local git objects for the three pinned commits, and installed project dependencies. `npm run profile:planner -- --smoke` validates the instrumentation on 1k rows, not performance. Raw outputs: `artifacts/p1c2c/report.json`, per-process JSON, six `.cpuprofile` and six `.heapprofile` files. CPU profiles can be opened in Chrome DevTools Performance and heap sampling profiles in Memory. [Compact evidence](evidence/p1c2c-profiling.json) retains every latency/CPU/GC sample, all statistics, profiler summaries and raw artifact hashes.
+
+Protocol was recorded in DECISIONS.md before measurement. Compare exact P1C-1 `8805cac`, P1C-2A `c83da18` and P1C-2B `ff22873`. Six fresh-process blocks use all six version permutations; one child at a time, no concurrent builds/tests/browser suite. Each child is pinned to CPU 0 and verifies its affinity. Node 24.22.1 / V8 13.6.233.17-node.58, Linux 6.18.57 x64, Xeon Platinum 8573C; parent affinity 0–2, available parallelism two, CPU quota 200000/100000, 8 GiB container memory. Fixed V8 seed 2026, old-space limit 1024 MiB, min/max semi-space 16 MiB. These are diagnostic controls, not production runtime changes or exclusive host ownership.
+
+Identical 100k rows (id=i+1, k=i%10, v=floor(i/10)%5), explicit unique id and non-unique k indexes. Each workload/process has 30 warmup batches and 25 measured batches; workload order rotates. No-LIMIT batches execute one SQL query; the three short controls average 25 queries per batch. Thus each version/workload has 150 batch samples, with correlated observations within six processes. All complete results and actual source kinds/counts are asserted outside timing. 34,200 timed SQL executions, plus 41,040 warmup queries in timing workers; separate profiler workers add their own warmups and 480 profiled queries. Parsing through materialization is timed; setup/index construction/assertions/Worker transfer are excluded. No explicit GC, CPU/heap profiler or outlier removal in the timing arm; GC observation remains enabled. Two setImmediate turns after each checked batch drain GC notifications; events outside SQL windows are excluded from overlap totals. Natural GC may also occur between samples.
+
+| 100k workload | P1C-1 median / p95 ms | P1C-2A median / p95 ms | P1C-2B median / p95 ms |
+| --- | ---: | ---: | ---: |
+| duplicate | 51.668088 / 80.974537 | 50.012647 / 72.464734 | 51.418345 / 92.088705 |
+| limit1 | 0.126554 / 1.060157 | 0.047906 / 0.155093 | 0.048630 / 0.188365 |
+| unique | 0.122259 / 0.609879 | 0.116798 / 1.036754 | 0.117317 / 0.321505 |
+| missing | 0.117807 / 0.353899 | 0.107000 / 0.395875 | 0.110522 / 0.456319 |
+
+| Sample variance (ms²) | P1C-1 | P1C-2A | P1C-2B |
+| --- | ---: | ---: | ---: |
+| duplicate | 176.201524 | 118.705847 | 450.013567 |
+| limit1 | 0.118689 | 0.005333 | 0.021878 |
+| unique | 0.083507 | 0.291842 | 0.014382 |
+| missing | 0.039679 | 0.020085 | 0.048263 |
+
+| Ratio of paired process medians | P1C-2A / P1C-1, ratio [95% interval] | P1C-2B / P1C-2A, ratio [95% interval] |
+| --- | ---: | ---: |
+| duplicate | 0.962 [0.884, 1.048] | 1.027 [0.962, 1.098] |
+| limit1 | 0.379 [0.356, 0.402] | 1.021 [0.914, 1.107] |
+| unique | 0.939 [0.842, 1.047] | 1.036 [0.898, 1.170] |
+| missing | 0.924 [0.853, 1.012] | 1.039 [0.948, 1.135] |
+
+Ratios are geometric means of six paired process-median ratios; intervals resample whole pairs 10,000 times with seed 2026. They are conditional on this experiment, not proof of equivalence or field confidence. p95 is nearest-rank, variance uses N−1. Short-control p95 describes batch averages, not individual requests. The existing LIMIT-1 policy consistently chooses the four-row scan instead of an indexed cursor on this fixture and has a lower measured median; this is validation of an existing path, not a new P1C-2C speedup. No-LIMIT/unique/missing retain their existing paths.
+
+Stabilization is incomplete: the A/A median discrepancy is smaller in this run than P1C-2B’s earlier run, but its no-LIMIT p95 remains 92.089 ms and variance 450.014 ms². P1C-2A no-LIMIT variance is 118.706 ms² versus the earlier 16.025 ms². Methodology, warmups, batching and heap controls differ, so neither change establishes improved benchmark variance. All tails and slower controls are retained.
+
+| No-LIMIT diagnostic, median | P1C-1 | P1C-2A | P1C-2B |
+| --- | ---: | ---: | ---: |
+| Process CPU ms | 51.676 | 50.032 | 51.428 |
+| GC-event overlap ms | 7.475 | 6.996 | 7.390 |
+| Main-thread runqueue wait ms | 7.514 | 7.786 | 8.055 |
+
+All 450 no-LIMIT samples overlap GC, predominantly minor collections; major collection overlaps occur in 1/1/2 samples for P1C-1/A/B. Within-process demeaned wall/GC-overlap correlation is 0.588: an association with a component of wall time, not a causal decomposition. Observed GC intervals are clipped and unioned without double counting; they are not independently measured stop-the-world pauses and are never subtracted to invent a “pure engine” latency.
+
+Process CPU tracks wall time closely and measured container throttled time is zero. Main-thread scheduler wait includes competition from this process’s V8 GC/JIT threads on the pinned CPU, as well as possible external tasks; it is not automatically host noise. CPU counters include all process threads. This run does not attribute CPU frequency, turbo, hypervisor scheduling, individual JIT transitions or historical host load. Source trace time is inclusive; for short batches, the saved sourceMs belongs to the first query, not the whole batch.
+
+CPU and allocation profiles use six separate diagnostic processes, two per version in forward/reverse order, after the same warmup. Each profile window executes 40 no-LIMIT queries. CPU sampling interval is 1,000 µs; allocation sampling is 32,768 bytes with objects collected by minor/major GC retained in the sampling report. Full GC conditions these diagnostic windows only. The integration test confirms those runtime protocol options retain sampled allocations after collection. Profiler timings are not mixed with headline latency.
+
+Across six profiles, sampled total allocation is **35.20–35.24 MiB per query**. This is a statistical allocation estimate, including collected objects, not retained heap growth or an exact byte count. Memory snapshots also retain profiler metadata and cannot establish a SQL memory leak. Source/harness hashes match; P1C-2A/B engine hashes are identical.
+
+| Hotspot group | CPU duration-weighted self share, six-profile range | Sampled allocation self share, range |
+| --- | ---: | ---: |
+| SQL qualification/source/projection | 24.88–27.46% | 34.40–34.77% |
+| Key codec | 14.45–17.77% | 20.36–20.96% |
+| Index cursor and row validation | 5.92–7.78% | 12.43–12.81% |
+| Pull iterator/tracing | 5.82–7.19% | 0.36–0.48% |
+| Expression evaluation | 5.61–6.62% | 7.17–7.71% |
+| GC | 16.29–17.75% | not an allocation site |
+
+CPU self percentages weight sampled frames by inspector time deltas, not OS per-function CPU clocks; unsampled/descheduled gaps can affect these weights. Raw profiles and unweighted self-sample shares are also retained: GC is 10.8–11.8% of frame samples, compared with 16.3–17.7% of duration weights. Self values exclude children; inclusive call stacks are not summed. `Debugger.getScriptSource` confirmed the transpiled anonymous database positions correspond to row qualification, source generation and projection. Named codec work includes canonicalKey/decodeKey; pager reads copy bytes and cursor traversal decodes leaves. These are common pre-existing costs, not newly identified planner regressions.
+
+Confidence: strong that this fixture allocates heavily and incurs recurring GC across all versions; moderate that GC contributes to current latency variation; low for attribution of the historical 17 ms median gap. The planner is not a visible CPU-profile hotspot at this sampling resolution, which does not mean it is free. Static/tests/trace evidence confirms no-LIMIT performs zero prefix reads. No reproducible evidence warrants changing the 1,024-row/eight-probe policy.
+
+P1 integration recommendation: retain current semantics/thresholds, review the stacked PRs bottom-up, then run the full gates on an authorized integration branch. This does not declare the original P1 optimizer complete: general statistics/cost planning, range/join selection, estimated EXPLAIN and tree UI remain absent. If separately authorized, test one allocation-reduction hypothesis in qualification/key decoding while preserving ownership, validation and trace guarantees. No merge/deploy/P2/P3 is performed here.
+
 ## P1C-2B regression investigation (2026-11-19)
 
 The historical no-LIMIT change (62.157 → 79.531 ms) was **not reproduced consistently**. A new equivalent comparison gives 49.139 ms for exact P1C-1 and 45.355 ms for exact P1C-2A. The candidate engine is byte-identical to P1C-2A, yet measures 54.934 ms: the A/A control demonstrates substantial process/run variation. The historical cause remains unconfirmed; no execution fix, threshold change or speedup is claimed. GC, JIT and host scheduling were not separately attributed.
