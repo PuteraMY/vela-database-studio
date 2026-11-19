@@ -1,3 +1,4 @@
+// Frontend smoke test.
 import { useEffect, useRef, useState } from "react";
 import { useStudio } from "./state/studio";
 import { datasetNames, type Dataset } from "./engine/datasets";
