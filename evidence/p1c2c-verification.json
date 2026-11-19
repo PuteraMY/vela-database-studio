@@ -1,0 +1,125 @@
+{
+  "milestone": "P1C-2C controlled CPU/GC profiling; no production engine/threshold change",
+  "baseCommit": "ff22873c11d7ed1595125081f60df958cb394b7e",
+  "branch": "feat/vela-p1c2c-controlled-profiling",
+  "prBase": "feat/vela-p1c2b-planner-calibration",
+  "verifiedAt": "2026-11-19T14:29:24.190343+00:00",
+  "basePR": {
+    "number": 7,
+    "verifiedOpen": true,
+    "head": "ff22873c11d7ed1595125081f60df958cb394b7e",
+    "base": "feat/vela-p1c2a-cost-aware-planner",
+    "successfulRunIds": [
+      44487551109,
+      44487616733
+    ]
+  },
+  "commands": {
+    "npx vitest run tests/profiling-metrics.test.ts tests/profiling-integration.test.ts": {
+      "exitCode": 0,
+      "passed": 14,
+      "seconds": 0.767
+    },
+    "npm run profile:planner -- --smoke": {
+      "exitCode": 0,
+      "rows": 1000,
+      "realCPUAndHeapProfiles": true
+    },
+    "npm run verify": {
+      "exitCode": 0,
+      "skills": "8 entrypoints + 1 support/license hash",
+      "typecheck": "passed",
+      "lint": "passed",
+      "units": 722,
+      "files": 16,
+      "skipped": 0,
+      "unitSeconds": 105.34,
+      "buildSeconds": 3.11
+    },
+    "npm run test:production": {
+      "exitCode": 0,
+      "startTime": "2026-11-19T08:46:32.142Z",
+      "duration": 86403.595,
+      "expected": 66,
+      "skipped": 0,
+      "unexpected": 0,
+      "flaky": 0
+    },
+    "npm run curated": {
+      "exitCode": 0,
+      "passed": 100,
+      "failed": 0
+    },
+    "npm run fuzz": {
+      "exitCode": 0,
+      "seed": 355866,
+      "total": 5000,
+      "matched": 5000,
+      "mismatches": 0,
+      "matchRate": 1,
+      "elapsedMs": 3403.368342,
+      "schemaCount": 25
+    },
+    "npm run profile:planner": {
+      "exitCode": 0,
+      "timingProcesses": 18,
+      "diagnosticProcesses": 6,
+      "timedSQLExecutions": 34200,
+      "timingWarmupQueries": 41040,
+      "profiledQueries": 480,
+      "CPUProfiles": 6,
+      "heapProfiles": 6,
+      "sourceAtStart": "ac82957f4426c260dff1ef3325e3f1eece3b1fa8e8fff1b229c8aa94241b2ca7",
+      "sourceAtEnd": "ac82957f4426c260dff1ef3325e3f1eece3b1fa8e8fff1b229c8aa94241b2ca7",
+      "finishedAt": "2026-11-19T14:22:47.088Z",
+      "rawReportSha256": "b651db786e4856e42c7ea178e336dc727ef22d248410534936c1ab18c5309943"
+    },
+    "npm audit --json": {
+      "exitCode": 0,
+      "vulnerabilities": {
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      }
+    },
+    "git diff --check": {
+      "exitCode": 0
+    }
+  },
+  "initialCorrections": [
+    "TypeScript GC PerformanceEntry detail annotation",
+    "Vitest invalid-statistics matrix wraps array data instead of spreading arguments"
+  ],
+  "productionSourceUnchanged": true,
+  "dependenciesUnchanged": true,
+  "delegation": null,
+  "changedCodeHashes": {
+    "tools/profile-planner.ts": "2d8844e3226d6b4092bb0555b3e45c370b3c1ef31ff6a8b5a4251087c436057c",
+    "tools/profiling-metrics.ts": "05d32b827a6cec717486b704c47d5bcd1bf44b24692ac1bb16f480dbf7c7ebcb",
+    "tests/profiling-metrics.test.ts": "85d1770ffde254e3d53e57f17c481c3a5102f69ee7788c864239b71060b71e24",
+    "tests/profiling-integration.test.ts": "cc6a9f1b5649db54be89e7a1fb0e165ea0e1200f667424e3b94513abbad271f2",
+    "package.json": "84f8bc91f80cd61f5a133ee2f759393426e6e4bb23f5c8b16636b5f0b1ab1e17"
+  },
+  "logHashes": {
+    "artifacts/p1c2c-focused.log": "008de6eb73cc3b791252fae36bac1446d6710a19b90cd74f45a454a68301a07f",
+    "artifacts/p1c2c-smoke.log": "5df17149881665595a231ee57840ada678d07541b52c573e57ac51989a6bd000",
+    "artifacts/p1c2c-verify.log": "065b12f47055ab16d5d74b4745f0d5016602061772e264d800912147c9c44261",
+    "artifacts/p1c2c-production.log": "7dc990023ac0e8a1da2b8b1fad6aa36c6464ac9055e5cd4f34d3e80ed0283e9d",
+    "artifacts/p1c2c-curated.log": "61863f780eab7ffee5bc54391d75c6fbecc3d61d02a473f8705602390bc01760",
+    "artifacts/p1c2c-fuzz.log": "4c30564db8af8c678f939d2a0eaca87dc7f6fb27199a38c657a5a6c734035bea",
+    "artifacts/p1c2c-profile.log": "9bcf0ac6aa75a0d1890454da0ede2ae5cbc366edbddb4a4d2ea89a3997adad66"
+  },
+  "evidenceHash": "e8eecb2961de8ee0fb834b57e7ff9a3be1e8d51c04e5bb7a13ed823b3a6484f3",
+  "limitations": [
+    "Historical cause remains unproven; current allocation/GC costs measured across all versions",
+    "Conditional six-process-pair intervals, shared Linux host, one uniform 100k fixture; tails persist",
+    "CPU profiler delta weights are not per-function OS CPU clocks; scheduler wait includes own V8 threads",
+    "Sampled allocation estimates include collected objects; retained-heap counters include profiler metadata",
+    "Node-only timing excludes Worker transfer/DOM; short controls use 25-query batch averages",
+    "No full optimizer, merge, deployment or P2/P3 work",
+    "Remote candidate CI reported separately on PR"
+  ]
+}

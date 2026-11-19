@@ -1,8 +1,22 @@
 # VELA delivery and skills integration report
 
-Verification finalized on 2026-11-19. **P0 through P1C-2A and P1C-2B investigation/regression validation are locally verified. Safe single-table equality SELECT now uses explicit B+trees; other queries retain P0 scans. General optimization, P2 and P3 remain unimplemented. The full original project is not finished.**
+Verification finalized on 2026-11-19. **P0 through P1C-2A, P1C-2B regression validation and P1C-2C controlled profiling are locally verified. Safe single-table equality SELECT now uses explicit B+trees; other queries retain P0 scans. General optimization, P2 and P3 remain unimplemented. The full original project is not finished.**
 
-## P1C-2B planner investigation checkpoint
+## P1C-2C controlled profiling checkpoint
+
+Verified exact P1C-2B `ff22873c11d7ed1595125081f60df958cb394b7e`, clean local/remote state and open PR #7 with both CI checks successful. Developed detached, verified tools/tests and completed measurements before creating `feat/vela-p1c2c-controlled-profiling`; stacked review targets P1C-2B. Existing PRs #1–#7/main are preserved.
+
+Delivered a reproducible CPU/GC/allocation protocol and 14 tool/integration tests. Eighteen sequential fresh timing processes balance all six orders of exact P1C-1/A/B engines under fixed CPU affinity, heap bounds and seed. Separate diagnostic processes produce two CPU and heap profiles per version. All production engine, planner thresholds, UI, dependencies and skill sources remain unchanged. No subagents, merge/deployment or P2/P3 work.
+
+No-LIMIT median/p95 ms: **51.668/80.975 (C1), 50.013/72.465 (A), 51.418/92.089 (B)**. Conditional paired-bootstrap intervals include 1 for A/C1 **0.962 [0.884,1.048]** and identical-code B/A **1.027 [0.962,1.098]**. All 450 no-LIMIT samples overlap GC; separate allocation profiles estimate **35.20–35.24 MiB/query** in every version. Qualification/source/projection, codec and row validation are common hotspots. GC is 16.3–17.7% of sampled duration weights (10.8–11.8% of frame samples). These are diagnostic sampling measures, not exact OS CPU attribution or retained heap growth.
+
+Confidence is strong for recurring allocation/GC costs in this fixture, moderate for their contribution to current variability and low for the historical 17 ms gap's exact cause. Observed container throttling is zero and process CPU tracks wall time; main-thread scheduler wait also includes own V8 threads. Current profiling cannot reconstruct historical GC/JIT/host state. Tails remain substantial and not all variances improved. No threshold calibration, engine fix or new performance improvement is claimed. Methodology, statistical limits and slower controls are in BENCHMARK.md / `evidence/p1c2c-profiling.json`.
+
+Local skills/typecheck/lint/build, **722 unit / 66 production browser / 100 curated / 5000 fuzz**, allocation-runtime verification and all profiling assertions passed; audit zero advisories. Evidence: `evidence/p1c2c-verification.json`. The shared systematic-debugging and verification-before-completion guides were read and used manually; no installation or cloud registration claim. Remote CI is separate and reported on the stacked PR.
+
+Recommendation: retain current thresholds, review the stack bottom-up and run gates on an authorized integration branch. This is not completion of the original P1 optimizer; statistics/general costing, range/join planning, estimated EXPLAIN and tree UI remain outstanding. A subsequent allocation-reduction experiment requires new authorization and must preserve ownership/validation/tracing guarantees.
+
+## P1C-2B planner investigation checkpoint (historical)
 
 Verified exact base `c83da1883d101c3232857d13f047cc478ccaa8d6`, remote P1C-2A branch and open PR #6 targeting P1C-1, including both successful existing CI checks. Work is on `feat/vela-p1c2b-planner-calibration`, targeting P1C-2A. PRs #1–#6/main are preserved; no merge/deployment.
 
@@ -103,14 +117,14 @@ This continuation corrected virtual-spacer paint/layout shifts, graph clipping, 
 
 | Executed command/check | Result |
 | --- | --- |
-| `npm run verify` | Skill integrity, strict typecheck, lint, 708/708 unit tests and production build passed; no emitted warnings/errors. |
-| `npm run test:production` | 66/66 passed in the P1C-2B full production run; zero skipped/flaky/unexpected cases. |
+| `npm run verify` | Skill integrity, strict typecheck, lint, 722/722 unit tests and production build passed; no emitted warnings/errors. |
+| `npm run test:production` | 66/66 passed in the P1C-2C full production run; zero skipped/flaky/unexpected cases. |
 | `npm run curated` | 100/100 hand-written expected result sets verified in VELA and SQLite. |
 | `npm run fuzz` | 5,000/5,000 matched (100%), seed 355866, 25 randomized schemas, 20 P0 query categories. |
-| `npm audit --json` | Zero known advisory findings in the P1C-2B run. |
+| `npm audit --json` | Zero known advisory findings in the P1C-2C run. |
 | `npx tsx tools/inspect-ui.ts` (historical P0) | 360/390/768/1100/1440 layouts have no document/body horizontal overflow; no collected page/console errors or warnings. |
 | `npx tsx tools/browser-profile.ts` (historical P0) | Real production Worker/result/scroll measurements, zero collected errors; limitations below. |
-| `npm run benchmark:calibration` | Exact P1C-1/P1C-2A/candidate/forced-scan assertions passed in 12 process trials; source hashes unchanged, all samples/regressions retained. |
+| `npm run profile:planner` | Eighteen timing/six diagnostic processes passed with unchanged hashes; CPU, allocation and GC evidence retained. |
 
 The fuzzer's initial match rate was **98.44% (4,922/5,000)**. All 78 observed mismatches were fixed: REAL division 40, Unicode LIKE 20, SUBSTR bounds 13, boolean IS predicates 5. The final run has no unresolved mismatches **within its generated subset**. It excludes P3 subqueries, CTEs, set operations/windows and P1/P2 systems. Unsupported probes are recorded separately, never counted as matching errors. Ordered cell comparison uses a 1e-10 floating tolerance and excludes labels. This is not universal SQLite compatibility: strict stored types, JavaScript numeric limits and limited date formats intentionally differ. The comparison UI test demonstrates one known unsupported `%j` date format instead of concealing it.
 
@@ -149,11 +163,11 @@ Playwright tests, security changes, UI implementation and final documents were r
 - Strict storage types and IEEE-754 numbers differ from SQLite affinity/64-bit integers. Date functions implement a documented small UTC subset. Arbitrary SQL compatibility is not promised by the 100% sampled match rate.
 - Only Chromium was exercised. Field performance, real-device behavior, full assistive-technology review and hosted security-header delivery are not verified.
 
-This checkpoint stops at P1C-2B investigation/validation. Further calibration or access rules require a new instruction and a reproducible hypothesis. P2 and P3 remain ordered after verified P1.
+This checkpoint stops at P1C-2C controlled profiling. Further optimization or integration requires a new instruction; access/threshold changes need reproducible evidence. P2 and P3 remain ordered after verified P1.
 
 ## Release assessment
 
-This is a tested educational P0 SQL studio with verified P1A storage, P1B-1 maintenance, P1B-2A internal reads, P1B-2B bounded indexed SQL, P1C-1 streaming/early termination, P1C-2A bounded planning and P1C-2B regression validation with reproducible evidence. It is not a completed transactional database or a durable production datastore. The requested eight-name source review is complete, with one original vendor folder verified and seven legacy guides awaiting upstream replacements; native automatic catalog registration is unverified. The full original “done when” bar is not met because later tiers and indexed joins are absent.
+This is a tested educational P0 SQL studio with verified P1A storage, P1B-1 maintenance, P1B-2A internal reads, P1B-2B bounded indexed SQL, P1C-1 streaming/early termination, P1C-2A bounded planning and P1C-2B regression validation and P1C-2C controlled profiling with reproducible evidence. It is not a completed transactional database or a durable production datastore. The requested eight-name source review is complete, with one original vendor folder verified and seven legacy guides awaiting upstream replacements; native automatic catalog registration is unverified. The full original “done when” bar is not met because later tiers and indexed joins are absent.
 
 The static build is ready for an approved preview deployment, subject to the explicit P0 limits above. After the user created [PuteraMY/vela-database-studio](https://github.com/PuteraMY/vela-database-studio), the project was published to its main branch. The initial remote commit and owner's MIT license were preserved in merge commit `9b58b91`, along with the full local development history. No unrelated project or shared skills repository was modified. No production site deployment occurred. npm/Chromium/skill access succeeded; omitted engine tiers are scope limits rather than installation failures.
 

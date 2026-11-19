@@ -1,6 +1,6 @@
 # Progress
 
-Current milestone: P1C-2B planner investigation and regression validation on `feat/vela-p1c2b-planner-calibration`, based on verified P1C-2A `c83da1883d101c3232857d13f047cc478ccaa8d6`. Local verification is complete; the historical regression has no confirmed cause and no production fix is claimed. Target P1C-2A; preserve PRs #1–#6/main.
+Current milestone: P1C-2C controlled CPU/GC profiling on `feat/vela-p1c2c-controlled-profiling`, based on verified P1C-2B `ff22873c11d7ed1595125081f60df958cb394b7e`. Local verification/profiling is complete; no production engine or planner threshold changes. Target P1C-2B; preserve PRs #1–#7/main.
 
 | Tier | Status | Verified boundary |
 | --- | --- | --- |
@@ -12,11 +12,22 @@ Current milestone: P1C-2B planner investigation and regression validation on `fe
 | P1C-1 — streaming equality | Implemented and locally verified | Existing exact cursor, downstream LIMIT/OFFSET, accurate consumed-entry trace and recursive cleanup. |
 | P1C-2A — bounded access planning | Implemented and locally verified | Positive bounded-prefix evidence may select early scan; all other eligible queries retain streaming indexes. |
 | P1C-2B — planner investigation | Locally verified investigation checkpoint | Repeated four-way measurements, A/A control and 26 additional regression tests; production engine/thresholds unchanged. |
+| P1C-2C — controlled profiling | Locally verified profiling checkpoint | CPU/heap/GC instrumentation, balanced process trials and uncertainty reporting; no performance fix claimed. |
 | Remaining P1 | Not started | No general optimizer/statistics, estimated EXPLAIN, indexed joins or tree visualizer. |
 | P2 — transactions, WAL, MVCC | Not started | Snippet IndexedDB storage is not database persistence. Transaction commands are rejected. |
 | P3 — advanced SQL | Not started | No subqueries, CTEs, set operations or windows. Fuzz/benchmark tooling is available for P0. |
 
-## P1C-2B verified investigation checkpoint
+## P1C-2C verified profiling checkpoint
+
+- Verified clean local/remote P1C-2B and open PR #7 with both checks successful. Worked detached from the exact base until all gates/profiling completed, then created the dedicated branch. No subagents, engine/UI changes, dependencies, services or shared-skill edits.
+- Added `profile:planner`, tested statistical/profile analysis helpers and runtime allocation-sampling verification. The smoke run completed timing, CPU and heap capture on 1k rows. Two initial tool/test TypeScript errors (GC entry annotation and test matrix shape) were corrected before final gates.
+- `npm run verify`: skills/typecheck/lint, **722/722 unit tests in 16 files** (105.34s), build (3.11s), all passed. Focused profiling tests **14/14**. `npm run test:production`: **66/66**, zero skipped/flaky/unexpected; curated **100/100**; fuzz **5000/5000**, seed 355866; audit zero advisories. Valid completed gates were retained across the session interruption; unchanged source/tool hashes were checked.
+- `npm run profile:planner` passed 18 timing and six diagnostic processes on identical 100k fixtures, using all six version orders, fixed heap/seed/CPU affinity, 30 warmup and 25 measured batches per workload/process. All 34,200 timed query results and source counts passed assertions. Two CPU/heap profiles per version capture 480 further query executions; profile windows check row counts plus complete boundary results. Engine/tool hashes remained unchanged.
+- No-LIMIT median/p95 ms: P1C-1 **51.668/80.975**, P1C-2A **50.013/72.465**, P1C-2B **51.418/92.089**. Paired process-median ratios: A/C1 **0.962 [0.884,1.048]**, identical-code B/A **1.027 [0.962,1.098]**. No reproducible planner regression or justification to change thresholds; residual variance remains.
+- All 450 no-LIMIT samples overlap GC (median 7.475/6.996/7.390 ms). Allocation sampling estimates 35.20–35.24 MiB/query across all six profiles. Common hotspots are qualification/source/projection, codec, row validation and GC; no new planner allocation hotspot. Timing/GC correlation is observational and historical causation remains unconfirmed.
+- Full methodology, tails, CPU/GC caveats and integration recommendation: BENCHMARK.md. Evidence: `evidence/p1c2c-profiling.json`, `evidence/p1c2c-verification.json`; raw logs/profiles in `artifacts/p1c2c*`. Remote CI is separate and reported with the PR. Stop here: no merge/deploy/general optimizer/P2/P3.
+
+## P1C-2B verified investigation checkpoint (historical)
 
 - Verified the exact P1C-2A commit, remote branch and PR #6 ancestry/checks before branching. Added `benchmark:calibration` and 26 regression tests; all production engine/UI/storage/Worker code, dependencies and skill sources are unchanged. No subagents.
 - Historical no-LIMIT 62.157 → 79.531 ms was not reproduced consistently. New P1C-1/P1C-2A/candidate medians: **49.139 / 45.355 / 54.934 ms**. P1C-2A and candidate have identical engine hashes; the A/A variation prevents a causal calibration claim. Keep the existing thresholds and accurate execution trace. Detailed medians/p95/variance and all samples are in BENCHMARK.md / `evidence/p1c2b-calibration.json`.

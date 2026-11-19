@@ -1,5 +1,19 @@
 # Testing record
 
+## P1C-2C verification (2026-11-19)
+
+`npx vitest run tests/profiling-metrics.test.ts tests/profiling-integration.test.ts` passed **14/14** (0.767s). Tests check finite samples, known median/variance, deterministic paired bootstrap/A-A controls, clipping and union of overlapping GC intervals, duration-weighted CPU self attribution, allocation self totals, malformed inputs and actual retention of collected allocation samples in Node's inspector. The runtime test allocates/discards arrays, forces collection, and distinguishes sampling with collected-object flags from surviving-only sampling. No engine tests were changed.
+
+The initial typecheck caught two new-tool typing errors: GC PerformanceEntry.detail needed an explicit GC shape; the invalid-statistics Vitest matrix spread arrays instead of wrapping them as data. Corrected both, then typecheck and focused tests passed. `npm run profile:planner -- --smoke` completed 1k timing and real CPU/heap captures with asserted results/affinity and nonempty profiles; smoke timings are not performance evidence.
+
+`npm run verify` passed skills integrity (eight entrypoints plus license), strict typecheck, ESLint, **722/722 unit tests across 16 files**, zero skipped (105.34s), and build (3.11s). `npm run test:production` passed **66/66**, zero skipped/flaky/unexpected. Curated SQLite **100/100** and fuzz **5000/5000** (seed 355866, zero mismatches) passed. `npm audit --json` reported zero advisories. Production cases retain layouts, Worker execution, access traces, console/header assertions and browser semantics. No application/config edits occurred during that suite. Completed results were recovered after interruption and retained, since engine/tools/tests had not changed.
+
+`npm run profile:planner` then completed with exit 0: 18 timing processes (six balanced version-order blocks) and six separate CPU/heap diagnostic processes. Every timing result and source-row/access assertion passed: 34,200 timed SQL executions and 41,040 timing warmup queries. Diagnostics run their own warmups plus 480 profiled no-LIMIT queries; counts and full boundary outputs are asserted. Source/harness hashes remain unchanged. Six CPU and six heap profiles have nonempty samples, raw artifact hashes and compact summaries. No benchmark/build/browser/test workloads ran concurrently. BENCHMARK.md documents conditional confidence intervals, all tails and limitations; the scoped protocol replaces unrelated legacy benchmark reruns.
+
+A read-only inspector `Debugger.getScriptSource` check mapped anonymous transpiled profile locations to qualification/source/projection and index cursor code. Analysis distinguishes sampled duration weights, frame counts, process CPU, observed GC duration and sampled allocation; these are not interchangeable metrics. No engine/threshold fix was claimed or introduced.
+
+Logs: `artifacts/p1c2c-{focused,smoke,verify,production,curated,fuzz,profile}.log`; raw profiles/report: `artifacts/p1c2c/`; compact evidence: `evidence/p1c2c-{profiling,verification}.json`. No delegation or new dependencies. Shared systematic-debugging and verification-before-completion guides were manually read; no plugin installation/catalog registration claim. Remote CI is reported separately on the PR.
+
 ## P1C-2B verification (2026-11-19)
 
 `npm run verify` passed skills integrity (eight entrypoints plus license hash), strict TypeScript, ESLint, **708/708 unit tests across 14 files**, zero skipped (90.09s), and production build (3.25s). `npm run test:production` passed **66/66** in 78.84s, zero skipped/flaky/unexpected. Existing browser cases cover 360/768/1100/1440 layouts, desktop/mobile Worker execution, actual access traces, NULL/index-drop fallback and console/header checks. No application/config edits occurred during production tests.
